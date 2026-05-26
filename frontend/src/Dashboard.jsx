@@ -1,32 +1,54 @@
 import React, { useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css"; // カレンダーの基本スタイル
+import "./calendar-custom.css"; // 後ほど作成するカスタムスタイル
 
-// ダミーデータ（後ほどGoのバックエンドから取得する本物のデータに置き換えます）
-const dummyMails = [
+// 就活の予定ダミーデータ（日付ごとに管理）
+const dummyEvents = [
   {
     id: 1,
+    date: "2026-05-25",
     company: "株式会社スタンバイ",
-    subject: "【面接のご案内】一次選考について",
-    date: "2026/05/25",
-    status: "要対応",
+    title: "一次選考（オンライン面接）",
+    time: "14:00 - 15:00",
   },
   {
     id: 2,
-    company: "TechInnovation",
-    subject: "インターンシップ選考結果のお知らせ",
-    date: "2026/05/24",
-    status: "確認済み",
+    date: "2026-05-25",
+    company: "未来ソリューションズ",
+    title: "会社説明会",
+    time: "16:00 - 17:30",
   },
   {
     id: 3,
-    company: "未来ソリューションズ",
-    subject: "会社説明会動画ご視聴のお礼",
-    date: "2026/05/22",
-    status: "アーカイブ",
+    date: "2026-05-28",
+    company: "TechInnovation",
+    title: "最終面接（対面）",
+    time: "11:00 - 12:00",
   },
 ];
 
 export default function Dashboard() {
-  const [mails, setMails] = useState(dummyMails);
+  const [value, onChange] = useState(new Date());
+  const [events, setEvents] = useState(dummyEvents);
+
+  // 選択された日付を 'YYYY-MM-DD' の形式に変換する関数
+  const formatDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const selectedDateStr = formatDate(value);
+
+  // 選択された日付に一致する予定をフィルタリング
+  const activeEvents = events.filter((event) => event.date === selectedDateStr);
+
+  // 💡 カレンダーの日にちにドット（印）をつけるための判定
+  const hasEvent = (date) => {
+    return events.some((event) => event.date === formatDate(date));
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex">
@@ -38,13 +60,13 @@ export default function Dashboard() {
         <nav className="space-y-4">
           <a
             href="#"
-            className="block py-2.5 px-4 rounded bg-blue-600 font-semibold transition"
+            className="block py-2.5 px-4 rounded hover:bg-slate-800 transition text-slate-400"
           >
             📬 メール一覧
           </a>
           <a
             href="#"
-            className="block py-2.5 px-4 rounded hover:bg-slate-800 transition text-slate-400"
+            className="block py-2.5 px-4 rounded bg-blue-600 font-semibold transition"
           >
             📅 選考カレンダー
           </a>
@@ -59,82 +81,64 @@ export default function Dashboard() {
 
       {/* メインコンテンツ */}
       <main className="flex-1 p-8">
-        {/* ヘッダー */}
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-800">
-            就活ダッシュボード
-          </h1>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-slate-600 font-medium">
-              ようこそ、ユーザーさん
-            </span>
-            <button className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition">
-              ログアウト
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">選考カレンダー</h1>
+          <span className="text-sm text-slate-600 font-medium">
+            ようこそ、ユーザーさん
+          </span>
         </header>
 
-        {/* 状況サマリーカード */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">
-              未対応の重要メール
-            </p>
-            <p className="text-3xl font-bold text-red-500 mt-2">1 件</p>
+        {/* カレンダー＆予定のレイアウト */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 左側：カレンダー本体 (2カラム分) */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex justify-center">
+            <div className="w-full max-w-xl">
+              <Calendar
+                onChange={onChange}
+                value={value}
+                locale="ja-JP" // カレンダーを日本語化
+                className="w-full border-none"
+                tileContent={({ date, view }) =>
+                  view === "month" && hasEvent(date) ? (
+                    <div className="flex justify-center mt-1">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    </div>
+                  ) : null
+                }
+              />
+            </div>
           </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">今週の面接予定</p>
-            <p className="text-3xl font-bold text-blue-600 mt-2">0 件</p>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">
-              解析済み総メール数
-            </p>
-            <p className="text-3xl font-bold text-slate-800 mt-2">
-              {mails.length} 件
-            </p>
-          </div>
-        </div>
 
-        {/* メール一覧セクション */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-            <h3 className="font-bold text-slate-700">
-              自動検知された就活メール
+          {/* 右側：選択した日の予定一覧 (1カラム分) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 className="font-bold text-slate-800 text-lg mb-4 pb-2 border-b border-slate-100">
+              {selectedDateStr.replace(/-/g, "/")} の予定
             </h3>
-          </div>
-          <div className="divide-y divide-slate-200">
-            {mails.map((mail) => (
-              <div
-                key={mail.id}
-                className="p-6 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition"
-              >
-                <div className="mb-2 sm:mb-0">
-                  <span className="inline-block bg-slate-100 text-slate-800 text-xs px-2.5 py-1 rounded-md font-semibold mb-1">
-                    {mail.company}
-                  </span>
-                  <h4 className="text-base font-medium text-slate-800">
-                    {mail.subject}
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-1">
-                    受信日時: {mail.date}
-                  </p>
-                </div>
-                <div>
-                  <span
-                    className={`inline-block text-xs font-bold px-3 py-1.5 rounded-full ${
-                      mail.status === "要対応"
-                        ? "bg-red-100 text-red-700"
-                        : mail.status === "確認済み"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-slate-100 text-slate-600"
-                    }`}
+
+            {activeEvents.length > 0 ? (
+              <div className="space-y-4">
+                {activeEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="p-4 bg-blue-50 border border-blue-100 rounded-xl"
                   >
-                    {mail.status}
-                  </span>
-                </div>
+                    <span className="inline-block bg-blue-600 text-white text-xs px-2 py-0.5 rounded font-semibold mb-2">
+                      {event.company}
+                    </span>
+                    <h4 className="font-bold text-slate-800 text-sm mb-1">
+                      {event.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium">
+                      🕒 {event.time}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-12 text-slate-400 text-sm">
+                この日の選考予定はありません。
+              </div>
+            )}
           </div>
         </div>
       </main>
