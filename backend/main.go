@@ -94,10 +94,8 @@ func main() {
 			http.Error(w, "DBへの保存に失敗したで: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprintf(w, "ログイン成功 ＆ MySQLへのトークン保存完了やで！\n\n")
-		fmt.Fprintf(w, "保存されたアクセストークン:\n%s", token.AccessToken)
+		frontEndURL := "http://localhost:5173/?login=success"
+		http.Redirect(w, r, frontEndURL, http.StatusSeeOther)
 	})
 
 	fmt.Println("サーバーがポート 8080 で起動したで！ http://localhost:8080/login")
