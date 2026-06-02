@@ -87,9 +87,30 @@ func main() {
 			http.Error(w, "データベースへの保存に失敗しました: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		frontEndURL := "http://localhost:5173/?login=success"
 		http.Redirect(w, r, frontEndURL, http.StatusSeeOther)
+	})
+
+<<<<<<< HEAD
+		frontEndURL := "http://localhost:5173/?login=success"
+		http.Redirect(w, r, frontEndURL, http.StatusSeeOther)
+=======
+	// ★ フロントエンドに選考予定データを返すAPI
+	http.HandleFunc("/api/events", func(w http.ResponseWriter, r *http.Request) {
+		// フロントエンド（5173ポート）からのアクセスを許可する（CORS対応）
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Content-Type", "application/json")
+
+		// 本来はここをMySQLから取得するようにしますが、まずはGo側で本物のデータ構造を用意します
+		// 2026年5月のカレンダーに合わせて日付を設定しています
+		jsonEvents := `[
+			{"id": 1, "date": "2026-05-25", "company": "株式会社スタンバイ", "title": "一次選考（オンライン面接）", "time": "14:00 - 15:00"},
+			{"id": 2, "date": "2026-05-25", "company": "未来ソリューションズ", "title": "会社説明会", "time": "16:00 - 17:30"},
+			{"id": 3, "date": "2026-05-28", "company": "TechInnovation", "title": "最終面接（対面）", "time": "11:00 - 12:00"}
+		]`
+
+		w.Write([]byte(jsonEvents))
+>>>>>>> ab454e910ea4c5e9df9ed7a63551cbd52b5cfcba
 	})
 
 	// カレンダー用API
