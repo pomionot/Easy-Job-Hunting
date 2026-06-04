@@ -6,7 +6,7 @@ services:
     container_name: easy-job-hunting-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: easy_job_hunting
     ports:
       - "3306:3306"
