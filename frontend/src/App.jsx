@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Dashboard from "./Dashboard"; // さっき作った画面をインポート
+import MailList from "./pages/MailList";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 const GoogleIcon = () => (
   <svg
@@ -61,13 +63,7 @@ export default function App() {
     }
   };
 
-  // 1. ログイン済みならダッシュボード画面を表示
-  if (isLoggedIn) {
-    return <Dashboard />;
-  }
-
-  // 2. 未ログインならログイン画面を表示
-  return (
+  const LoginScreen = () => (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
         <div className="text-center mb-8">
@@ -101,5 +97,23 @@ export default function App() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginScreen />
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={isLoggedIn ? <Dashboard /> : <Navigate to="/" replace />}
+        />
+        <Route path="/mails" element={<MailList />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

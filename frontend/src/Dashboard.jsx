@@ -3,6 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -98,6 +99,56 @@ export default function Dashboard() {
             ようこそ、ユーザーさん
           </span>
         </header>
+
+        {/* 📬 就活メール機能への導線 */}
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "20px",
+            border: "1px solid #e0e0e0",
+            borderRadius: "12px",
+            backgroundColor: "#fff",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
+            maxWidth: "400px",
+          }}
+        >
+          <h3 style={{ margin: "0 0 10px 0", fontSize: "18px", color: "#333" }}>
+            📬 就活メールチェッカー
+          </h3>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#666",
+              margin: "0 0 15px 0",
+              lineHeight: "1.5",
+            }}
+          >
+            AIフィルターがメルマガを自動で弾き、面接や選考に関する重要なメールだけを厳選して表示します。
+          </p>
+          <Link
+            to="/mails"
+            style={{
+              display: "inline-block",
+              padding: "10px 20px",
+              backgroundColor: "#1a73e8",
+              color: "#fff",
+              textDecoration: "none",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              fontSize: "14px",
+              boxShadow: "0 2px 4px rgba(26,115,232,0.3)",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1557b0")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1a73e8")
+            }
+          >
+            メール一覧を見る →
+          </Link>
+        </div>
 
         {/* カレンダーセクション */}
         <div className="mb-12">

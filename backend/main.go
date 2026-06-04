@@ -10,6 +10,7 @@ import (
 	"Easy-Job-Hunting/config"
 	"Easy-Job-Hunting/handlers"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 )
 
@@ -19,28 +20,41 @@ func main() {
 	defer config.DB.Close()
 	auth.InitOauth()
 
+	r := gin.Default()
+
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "http://localhost:5173")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
 	// ログインURLを発行するAPI
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	r.GET("/login", func(c *gin.Context) {
 		url := auth.GoogleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
-		w.Write([]byte(url))
+		c.String(200, url)
 	})
 
 	// Googleからのコールバックを受け取るAPI
-	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
-		code := r.URL.Query().Get("code")
+	r.GET("/auth/callback", func(c *gin.Context) {
+		code := c.Query("code")
 		if code == "" {
-			http.Error(w, "認証コード（Code）が見つかりません", http.StatusBadRequest)
+			c.JSON(400, gin.H{"error": "認証コード（Code）が見つかりません"})
 			return
 		}
 
 		token, err := auth.GoogleOauthConfig.Exchange(context.Background(), code)
 		if err != nil {
-			http.Error(w, "トークンの交換に失敗しました: "+err.Error(), http.StatusInternalServerError)
+			c.JSON(500, gin.H{"error": "トークンの交換に失敗しました: " + err.Error()})
 			return
 		}
 
-		testEmail := "test@example.com"
+		// 💡 ここを test@example.com からご自身のアドレスに変更！
+		testEmail := "naoto.7010.minagawa@gmail.com"
 		insertQuery := `
 			INSERT INTO users (email, access_token, refresh_token, expiry)
 			VALUES (?, ?, ?, ?)
@@ -51,18 +65,19 @@ func main() {
 		`
 		_, err = config.DB.Exec(insertQuery, testEmail, token.AccessToken, token.RefreshToken, token.Expiry)
 		if err != nil {
-			http.Error(w, "データベースへの保存に失敗しました: "+err.Error(), http.StatusInternalServerError)
+			c.JSON(500, gin.H{"error": "データベースへの保存に失敗しました: " + err.Error()})
 			return
 		}
 
 		frontEndURL := "http://localhost:5173/?login=success"
-		http.Redirect(w, r, frontEndURL, http.StatusSeeOther)
+		c.Redirect(303, frontEndURL)
 	})
 
 	// 各種APIエンドポイントを外部ハンドラーにマッピング
-	http.HandleFunc("/api/events", handlers.HandleEvents)
-	http.HandleFunc("/api/fetch-mails", handlers.HandleFetchMails)
+	r.GET("/api/events", handlers.HandleEvents)
+	r.GET("/api/fetch-mails", handlers.HandleFetchMails)
+	r.GET("/api/mails/:id", handlers.GetMailDetailHandler)
 
 	fmt.Println("サーバーがポート 8080 で起動しました。 http://localhost:8080/login")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(r.Run(":8080"))
 }
