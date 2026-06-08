@@ -36,7 +36,10 @@ type MailDetail struct {
 // ==========================================
 func GetMailsHandler(c *gin.Context) {
 	ctx := context.Background()
-	currentUserEmail := "naoto.7010.minagawa@gmail.com"
+	currentUserEmail := c.Query("email")
+	if currentUserEmail == "" {
+		currentUserEmail = "naoto.7010.minagawa@gmail.com"
+	}
 
 	var accessToken string
 	// 🔑 ログイン中のメールアドレスに紐づくトークンをピンポイントで取得
@@ -125,7 +128,10 @@ func HandleFetchMails(c *gin.Context) {
 func GetMailDetailHandler(c *gin.Context) {
 	id := c.Param("id")
 	ctx := context.Background()
-	currentUserEmail := "naoto.7010.minagawa@gmail.com"
+	currentUserEmail := c.Query("email")
+	if currentUserEmail == "" {
+		currentUserEmail = "naoto.7010.minagawa@gmail.com"
+	}
 
 	var accessToken string
 	err := config.DB.QueryRow("SELECT access_token FROM users WHERE email = ?", currentUserEmail).Scan(&accessToken)

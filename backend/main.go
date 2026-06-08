@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 
 	"Easy-Job-Hunting/auth"
 	"Easy-Job-Hunting/config"
@@ -53,8 +55,28 @@ func main() {
 			return
 		}
 
-		// 💡 ここを test@example.com からご自身のアドレスに変更！
-		testEmail := "naoto.7010.minagawa@gmail.com"
+		client := auth.GoogleOauthConfig.Client(context.Background(), token)
+		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+		if err != nil {
+			c.JSON(500, gin.H{"error": "ユーザー情報の取得に失敗しました: " + err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		var userInfo struct {
+			Email string `json:"email"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+			c.JSON(500, gin.H{"error": "ユーザー情報の解析に失敗しました: " + err.Error()})
+			return
+		}
+
+		loginEmail := userInfo.Email
+		if loginEmail == "" {
+			c.JSON(500, gin.H{"error": "Googleアカウントのメールアドレスが取得できませんでした"})
+			return
+		}
+
 		insertQuery := `
 			INSERT INTO users (email, access_token, refresh_token, expiry)
 			VALUES (?, ?, ?, ?)
@@ -63,13 +85,13 @@ func main() {
 			refresh_token = VALUES(refresh_token),
 			expiry = VALUES(expiry);
 		`
-		_, err = config.DB.Exec(insertQuery, testEmail, token.AccessToken, token.RefreshToken, token.Expiry)
+		_, err = config.DB.Exec(insertQuery, loginEmail, token.AccessToken, token.RefreshToken, token.Expiry)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "データベースへの保存に失敗しました: " + err.Error()})
 			return
 		}
 
-		frontEndURL := "http://localhost:5173/?login=success"
+		frontEndURL := "http://localhost:5173/?login=success&email=" + url.QueryEscape(loginEmail)
 		c.Redirect(303, frontEndURL)
 	})
 

@@ -40,6 +40,10 @@ export default function App() {
     if (params.get("login") === "success") {
       setIsLoggedIn(true);
     }
+    const email = params.get("email");
+    if (email) {
+      localStorage.setItem("login_user_email", email);
+    }
   }, []);
 
   const handleLogin = async () => {

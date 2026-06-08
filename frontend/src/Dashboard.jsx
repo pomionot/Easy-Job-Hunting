@@ -47,7 +47,12 @@ export default function Dashboard() {
 
   // 🔄 2. 就活メールを取得
   useEffect(() => {
-    fetch("http://localhost:8080/api/fetch-mails")
+    const userEmail = localStorage.getItem("login_user_email") || "";
+    const emailQuery = userEmail
+      ? `?email=${encodeURIComponent(userEmail)}`
+      : "";
+
+    fetch(`http://localhost:8080/api/fetch-mails${emailQuery}`)
       .then((res) => {
         if (res.status === 401) {
           throw new Error(
@@ -58,7 +63,10 @@ export default function Dashboard() {
         return res.json();
       })
       .then((data) => {
-        setMails(data || []);
+        if (!Array.isArray(data)) {
+          throw new Error(data?.error || "メールデータの形式が不正です");
+        }
+        setMails(data);
         setLoadingMails(false);
       })
       .catch((err) => {
