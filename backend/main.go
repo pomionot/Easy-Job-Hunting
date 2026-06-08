@@ -91,7 +91,14 @@ func main() {
 			return
 		}
 
-		frontEndURL := "http://localhost:5173/?login=success&email=" + url.QueryEscape(loginEmail)
+		var userID int64
+		err = config.DB.QueryRow("SELECT id FROM users WHERE email = ?", loginEmail).Scan(&userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "ユーザーIDの取得に失敗しました: " + err.Error()})
+			return
+		}
+
+		frontEndURL := fmt.Sprintf("http://localhost:5173/?login=success&uid=%d&email=%s", userID, url.QueryEscape(loginEmail))
 		c.Redirect(303, frontEndURL)
 	})
 

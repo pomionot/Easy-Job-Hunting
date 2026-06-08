@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"Easy-Job-Hunting/config"
 
@@ -12,6 +13,36 @@ import (
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
 )
+
+func resolveUserAccessToken(c *gin.Context) (string, string, error) {
+	uidParam := c.Query("uid")
+	if uidParam != "" {
+		uid, err := strconv.ParseInt(uidParam, 10, 64)
+		if err != nil {
+			return "", "", fmt.Errorf("uidの形式が正しくありません")
+		}
+
+		var accessToken string
+		var email string
+		if err := config.DB.QueryRow("SELECT access_token, email FROM users WHERE id = ?", uid).Scan(&accessToken, &email); err != nil {
+			return "", "", err
+		}
+
+		return accessToken, email, nil
+	}
+
+	emailParam := c.Query("email")
+	if emailParam != "" {
+		var accessToken string
+		if err := config.DB.QueryRow("SELECT access_token FROM users WHERE email = ?", emailParam).Scan(&accessToken); err != nil {
+			return "", "", err
+		}
+
+		return accessToken, emailParam, nil
+	}
+
+	return "", "", fmt.Errorf("uidまたはemailが必要です")
+}
 
 // MailSummary は一覧用の軽いデータ構造
 type MailSummary struct {
@@ -36,23 +67,16 @@ type MailDetail struct {
 // ==========================================
 func GetMailsHandler(c *gin.Context) {
 	ctx := context.Background()
-	currentUserEmail := c.Query("email")
-	if currentUserEmail == "" {
-		currentUserEmail = "naoto.7010.minagawa@gmail.com"
-	}
-
-	var accessToken string
-	// 🔑 ログイン中のメールアドレスに紐づくトークンをピンポイントで取得
-	err := config.DB.QueryRow("SELECT access_token FROM users WHERE email = ?", currentUserEmail).Scan(&accessToken)
+	accessToken, userRef, err := resolveUserAccessToken(c)
 	if err != nil {
-		fmt.Printf("❌ [一覧-DBエラー] メールアドレス '%s' のトークンが見つかりません: %v\n", currentUserEmail, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "トークンが見つかりません"})
+		fmt.Printf("❌ [一覧-DBエラー] トークンが見つかりません: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// 💡 ログ1: トークン取得チェック
 	if len(accessToken) > 10 {
-		fmt.Printf("🔑 [一覧-DB成功] トークンを取得しました (冒頭: %s...)\n", accessToken[:10])
+		fmt.Printf("🔑 [一覧-DB成功] %s のトークンを取得しました (冒頭: %s...)\n", userRef, accessToken[:10])
 	} else {
 		fmt.Println("⚠️ [一覧-DB警告] トークンが空か極端に短いです:", accessToken)
 	}
@@ -128,18 +152,13 @@ func HandleFetchMails(c *gin.Context) {
 func GetMailDetailHandler(c *gin.Context) {
 	id := c.Param("id")
 	ctx := context.Background()
-	currentUserEmail := c.Query("email")
-	if currentUserEmail == "" {
-		currentUserEmail = "naoto.7010.minagawa@gmail.com"
-	}
-
-	var accessToken string
-	err := config.DB.QueryRow("SELECT access_token FROM users WHERE email = ?", currentUserEmail).Scan(&accessToken)
+	accessToken, userRef, err := resolveUserAccessToken(c)
 	if err != nil {
 		fmt.Printf("❌ [詳細-DBエラー] トークンが見つかりません: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "MySQLからのトークン取得に失敗しました"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	_ = userRef
 
 	token := &oauth2.Token{AccessToken: accessToken}
 	client := oauth2.NewClient(ctx, oauth2.StaticTokenSource(token))

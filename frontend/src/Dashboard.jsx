@@ -43,16 +43,19 @@ export default function Dashboard() {
         console.error(err);
         setLoadingCalendar(false);
       });
-  }, []);
+  }, []); // 👈 カレンダーのuseEffectはここで綺麗に閉じる！
 
-  // 🔄 2. 就活メールを取得
+  // 🔄 2. 就活メール（最新5件）を取得
   useEffect(() => {
+    const userUid = localStorage.getItem("login_user_uid") || "";
     const userEmail = localStorage.getItem("login_user_email") || "";
-    const emailQuery = userEmail
-      ? `?email=${encodeURIComponent(userEmail)}`
-      : "";
+    const userQuery = userUid
+      ? `?uid=${encodeURIComponent(userUid)}`
+      : userEmail
+        ? `?email=${encodeURIComponent(userEmail)}`
+        : "";
 
-    fetch(`http://localhost:8080/api/fetch-mails${emailQuery}`)
+    fetch(`http://localhost:8080/api/fetch-mails${userQuery}`)
       .then((res) => {
         if (res.status === 401) {
           throw new Error(
@@ -66,7 +69,8 @@ export default function Dashboard() {
         if (!Array.isArray(data)) {
           throw new Error(data?.error || "メールデータの形式が不正です");
         }
-        setMails(data);
+        // ダッシュボード用なので、最新の5件だけを切り出して表示する
+        setMails(data.slice(0, 5));
         setLoadingMails(false);
       })
       .catch((err) => {
@@ -74,7 +78,7 @@ export default function Dashboard() {
         setErrorMail(err.message || "メールの取得中にエラーが発生しました");
         setLoadingMails(false);
       });
-  }, []);
+  }, []); // 👈 メール専用のuseEffectとして独立させる！
 
   const handleEventClick = (info) => {
     setSelectedEvent(info.event.extendedProps);
@@ -94,6 +98,12 @@ export default function Dashboard() {
           >
             📬 メインダッシュボード
           </a>
+          <Link
+            to="/profile"
+            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
+          >
+            👤 プロフィール登録
+          </Link>
         </nav>
       </aside>
 
@@ -159,7 +169,7 @@ export default function Dashboard() {
         </div>
 
         {/* カレンダーセクション */}
-        <div className="mb-12">
+        <div className="mb-12" style={{ marginTop: "30px" }}>
           <h2 className="text-lg font-bold text-slate-700 mb-4">
             📅 選考カレンダー
           </h2>
@@ -250,7 +260,7 @@ export default function Dashboard() {
                     >
                       <div className="mb-2 sm:mb-0">
                         <span className="inline-block bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-md font-semibold mb-1">
-                          {mail.company}
+                          {mail.from}
                         </span>
                         <h4 className="text-base font-semibold text-slate-800 mt-1">
                           {mail.subject}
@@ -267,8 +277,8 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-12 text-slate-400 text-sm">
-                    就活に関連するメール（面接・選考・インターンなど）は見つかりませんでした。
+                  <div className="p-8 text-center text-slate-500">
+                    重要な就活メールは現在ありません。
                   </div>
                 )}
               </div>

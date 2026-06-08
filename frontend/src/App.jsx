@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Dashboard from "./Dashboard"; // さっき作った画面をインポート
 import MailList from "./pages/MailList";
+import Profile from "./pages/Profile";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 const GoogleIcon = () => (
@@ -39,6 +40,10 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("login") === "success") {
       setIsLoggedIn(true);
+    }
+    const uid = params.get("uid");
+    if (uid) {
+      localStorage.setItem("login_user_uid", uid);
     }
     const email = params.get("email");
     if (email) {
@@ -115,6 +120,10 @@ export default function App() {
         <Route
           path="/dashboard"
           element={isLoggedIn ? <Dashboard /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/profile"
+          element={isLoggedIn ? <Profile /> : <Navigate to="/" replace />}
         />
         <Route path="/mails" element={<MailList />} />
       </Routes>

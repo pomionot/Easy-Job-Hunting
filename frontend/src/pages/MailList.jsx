@@ -5,15 +5,18 @@ export default function MailList() {
   const [selectedMail, setSelectedMail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const userUid = localStorage.getItem("login_user_uid") || "";
   const userEmail = localStorage.getItem("login_user_email") || "";
 
   // 1. フィルターされたメール一覧をバックエンドから取得
   useEffect(() => {
-    const emailQuery = userEmail
-      ? `?email=${encodeURIComponent(userEmail)}`
-      : "";
+    const userQuery = userUid
+      ? `?uid=${encodeURIComponent(userUid)}`
+      : userEmail
+        ? `?email=${encodeURIComponent(userEmail)}`
+        : "";
 
-    fetch(`http://localhost:8080/api/fetch-mails${emailQuery}`)
+    fetch(`http://localhost:8080/api/fetch-mails${userQuery}`)
       .then((res) => {
         // デバッグ用：本当にJSONが返ってきているか、中身のタイプをチェック
         const contentType = res.headers.get("content-type");
@@ -42,11 +45,13 @@ export default function MailList() {
     setDetailLoading(true);
     setSelectedMail({ id }); // 先にIDだけ入れて枠を表示しておく
 
-    const emailQuery = userEmail
-      ? `?email=${encodeURIComponent(userEmail)}`
-      : "";
+    const userQuery = userUid
+      ? `?uid=${encodeURIComponent(userUid)}`
+      : userEmail
+        ? `?email=${encodeURIComponent(userEmail)}`
+        : "";
 
-    fetch(`http://localhost:8080/api/mails/${id}${emailQuery}`)
+    fetch(`http://localhost:8080/api/mails/${id}${userQuery}`)
       .then((res) => {
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
