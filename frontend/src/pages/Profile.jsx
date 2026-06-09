@@ -6,6 +6,7 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [university, setUniversity] = useState("");
   const [faculty, setFaculty] = useState("");
+  const [selfPr, setSelfPr] = useState("");
   const [targetIndustry, setTargetIndustry] = useState("");
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -27,6 +28,7 @@ export default function Profile() {
           setUniversity(data.university || "");
           setFaculty(data.faculty || "");
           setTargetIndustry(data.target_industry || "");
+          setSelfPr(data.self_pr || "");
         })
         .catch((err) => console.error("プロフィール読み込み失敗:", err));
     } else if (savedEmail) {
@@ -53,6 +55,7 @@ export default function Profile() {
           university,
           faculty,
           target_industry: targetIndustry,
+          self_pr: selfPr,
         }),
       });
       const data = await res.json();
@@ -97,7 +100,6 @@ export default function Profile() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="就活 太郎"
-              required
             />
           </div>
 
@@ -149,6 +151,18 @@ export default function Profile() {
             >
               {loading ? "登録中..." : "プロフィールを保存する"}
             </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              自己PR
+            </label>
+            <textarea
+              className="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:ring-2 focus:ring-blue-400 p-2 min-h-[120px]"
+              value={selfPr}
+              onChange={(e) => setSelfPr(e.target.value)}
+              placeholder="あなたの自己PRを入力してください（例：チームでの貢献、得意スキルなど）"
+            />
           </div>
         </form>
       </div>

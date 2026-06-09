@@ -16,6 +16,7 @@ type ProfileRequest struct {
 	University     string `json:"university"`
 	Faculty        string `json:"faculty"`
 	TargetIndustry string `json:"target_industry"`
+	SelfPR         string `json:"self_pr"`
 }
 
 type ProfileResponse struct {
@@ -25,6 +26,7 @@ type ProfileResponse struct {
 	University     string `json:"university"`
 	Faculty        string `json:"faculty"`
 	TargetIndustry string `json:"target_industry"`
+	SelfPR         string `json:"self_pr"`
 }
 
 func UpdateProfileHandler(c *gin.Context) {
@@ -40,15 +42,16 @@ func UpdateProfileHandler(c *gin.Context) {
 	}
 
 	query := `
-		INSERT INTO profiles (user_id, name, university, faculty, target_industry)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO profiles (user_id, name, university, faculty, target_industry, self_pr)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		name = VALUES(name),
 		university = VALUES(university),
 		faculty = VALUES(faculty),
-		target_industry = VALUES(target_industry);
+		target_industry = VALUES(target_industry),
+		self_pr = VALUES(self_pr);
 	`
-	if _, err := config.DB.Exec(query, req.UID, req.Name, req.University, req.Faculty, req.TargetIndustry); err != nil {
+	if _, err := config.DB.Exec(query, req.UID, req.Name, req.University, req.Faculty, req.TargetIndustry, req.SelfPR); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィールの保存に失敗しました: " + err.Error()})
 		return
 	}
@@ -71,12 +74,12 @@ func GetProfileHandler(c *gin.Context) {
 
 	var profile ProfileResponse
 	err = config.DB.QueryRow(
-		`SELECT u.id, u.email, COALESCE(p.name, ''), COALESCE(p.university, ''), COALESCE(p.faculty, ''), COALESCE(p.target_industry, '')
+		`SELECT u.id, u.email, COALESCE(p.name, ''), COALESCE(p.university, ''), COALESCE(p.faculty, ''), COALESCE(p.target_industry, ''), COALESCE(p.self_pr, '')
 		 FROM users u
 		 LEFT JOIN profiles p ON p.user_id = u.id
 		 WHERE u.id = ?`,
 		uid,
-	).Scan(&profile.UID, &profile.Email, &profile.Name, &profile.University, &profile.Faculty, &profile.TargetIndustry)
+	).Scan(&profile.UID, &profile.Email, &profile.Name, &profile.University, &profile.Faculty, &profile.TargetIndustry, &profile.SelfPR)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "ユーザーが見つかりません"})
