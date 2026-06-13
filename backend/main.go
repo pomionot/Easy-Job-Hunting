@@ -106,6 +106,8 @@ func main() {
 	r.GET("/api/events", handlers.HandleEvents)
 	r.GET("/api/fetch-mails", handlers.HandleFetchMails)
 	r.GET("/api/mails/:id", handlers.GetMailDetailHandler)
+	// 📄 backend/main.go 内に追加
+	r.POST("/api/companies", handlers.RegisterCompanyHandler)
 
 	fmt.Println("サーバーがポート 8080 で起動しました。 http://localhost:8080/login")
 	log.Fatal(r.Run(":8080"))

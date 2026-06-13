@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Dashboard from "./Dashboard"; // さっき作った画面をインポート
 import MailList from "./pages/MailList";
 import Profile from "./pages/Profile";
+import CompanyRegister from "./pages/CompanyRegister";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 const GoogleIcon = () => (
@@ -124,6 +125,12 @@ export default function App() {
         <Route
           path="/profile"
           element={isLoggedIn ? <Profile /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/company-register"
+          element={
+            isLoggedIn ? <CompanyRegister /> : <Navigate to="/" replace />
+          }
         />
         <Route path="/mails" element={<MailList />} />
       </Routes>

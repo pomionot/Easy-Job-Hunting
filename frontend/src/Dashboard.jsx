@@ -104,6 +104,12 @@ export default function Dashboard() {
           >
             👤 プロフィール登録
           </Link>
+          <Link
+            to="/company-register"
+            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700 mt-2"
+          >
+            🏢 企業情報登録
+          </Link>
         </nav>
       </aside>
 
