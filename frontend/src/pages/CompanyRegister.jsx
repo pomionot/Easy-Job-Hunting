@@ -78,7 +78,12 @@ export default function CompanyRegister() {
             ← ダッシュボードへ戻る
           </Link>
         </div>
-
+        <Link
+          to="/company-list"
+          className="text-sm text-slate-600 hover:text-blue-600 font-medium flex items-center gap-1"
+        >
+          📊 企業リストを見る
+        </Link>
         <h2 className="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 mb-6 flex items-center gap-2">
           🏢 企業情報登録
         </h2>

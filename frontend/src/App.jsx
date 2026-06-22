@@ -3,6 +3,7 @@ import Dashboard from "./Dashboard"; // さっき作った画面をインポー�
 import MailList from "./pages/MailList";
 import Profile from "./pages/Profile";
 import CompanyRegister from "./pages/CompanyRegister";
+import CompanyList from "./pages/CompanyList";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 const GoogleIcon = () => (
@@ -133,6 +134,7 @@ export default function App() {
           }
         />
         <Route path="/mails" element={<MailList />} />
+        <Route path="/company-list" element={<CompanyList />} />
       </Routes>
     </BrowserRouter>
   );

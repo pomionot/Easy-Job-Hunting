@@ -99,16 +99,23 @@ export default function Dashboard() {
             📬 メインダッシュボード
           </a>
           <Link
+            to="/company-register"
+            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
+          >
+            🏢 企業情報登録
+          </Link>
+
+          <Link
+            to="/company-list"
+            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
+          >
+            📊 企業管理リスト
+          </Link>
+          <Link
             to="/profile"
             className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
           >
             👤 プロフィール登録
-          </Link>
-          <Link
-            to="/company-register"
-            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700 mt-2"
-          >
-            🏢 企業情報登録
           </Link>
         </nav>
       </aside>
