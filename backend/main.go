@@ -13,11 +13,16 @@ import (
 	"Easy-Job-Hunting/handlers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 )
 
 func main() {
 	// 各種初期化処理の呼び出し
+	err := godotenv.Load()
+	if err != nil{
+		log.Println("Error loading .env file")
+	}
 	config.InitDB()
 	defer config.DB.Close()
 	auth.InitOauth()
@@ -111,6 +116,7 @@ func main() {
 	r.POST("/api/companies", handlers.RegisterCompanyHandler)
 	r.GET("/api/companies", handlers.GetCompaniesHandler)
 	r.PUT("/api/companies/status", handlers.UpdateCompanyStatusHandler)
+	r.POST("/api/ai/analyze", handlers.AnalyzeCompanyHandler)
 
 	fmt.Println("サーバーがポート 8080 で起動しました。 http://localhost:8080/login")
 	log.Fatal(r.Run(":8080"))
