@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import MaterialIcon from "../components/MaterialIcon";
 
 const statusStyles = {
   エントリー前: "bg-slate-100 text-slate-700 border-slate-300",
@@ -96,73 +97,106 @@ export default function CompanyList() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
-      {/* サイドバー (既存のまま) */}
-      <aside className="w-64 bg-slate-900 text-white p-6 hidden md:block">
-        <h2 className="text-xl font-bold mb-8 tracking-wider">
-          Easy Job Hunting
-        </h2>
-        <nav className="space-y-4">
+    <div className="min-h-screen bg-transparent flex app-shell">
+      <aside className="hidden md:flex w-72 flex-col gap-6 p-6 border-r border-slate-200/80 bg-slate-950/95 text-white">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-11 w-11 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+              <MaterialIcon
+                name="work_outline"
+                className="text-[24px] text-blue-200"
+              />
+            </div>
+            <div>
+              <div className="text-lg font-bold tracking-tight">
+                Easy Job Hunting
+              </div>
+              <div className="text-xs text-slate-300">企業管理リスト</div>
+            </div>
+          </div>
+        </div>
+        <nav className="space-y-2">
           <Link
             to="/"
-            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
+            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
           >
-            📬 メインダッシュボード
+            <MaterialIcon
+              name="space_dashboard"
+              className="text-[20px] text-blue-200"
+            />
+            メインダッシュボード
           </Link>
           <Link
             to="/company-register"
-            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
+            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
           >
-            🏢 企業情報登録
+            <MaterialIcon
+              name="domain_add"
+              className="text-[20px] text-blue-200"
+            />
+            企業情報登録
           </Link>
           <a
             href="#"
-            className="block py-2.5 px-4 rounded bg-blue-600 font-semibold transition"
+            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-blue-500 text-white shadow-lg shadow-blue-950/20"
           >
-            📊 企業管理リスト
+            <MaterialIcon name="stacks" className="text-[20px] text-white" />
+            企業管理リスト
           </a>
           <Link
             to="/profile"
-            className="block py-2.5 px-4 rounded bg-slate-800 font-semibold transition hover:bg-slate-700"
+            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
           >
-            👤 プロフィール登録
+            <MaterialIcon name="person" className="text-[20px] text-blue-200" />
+            プロフィール登録
           </Link>
         </nav>
       </aside>
 
-      <main className="flex-1 p-8">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-800">
-            🏢 エントリー企業管理リスト
-          </h1>
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <header className="section-card glass-panel px-5 py-4 sm:px-6 sm:py-5 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left">
+          <div>
+            <div className="chip mb-2 w-fit">
+              <MaterialIcon name="stacks" className="text-[18px]" />
+              企業管理リスト
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1 flex items-center gap-2">
+              <MaterialIcon name="domain" className="text-[26px]" />
+              エントリー企業管理リスト
+            </h1>
+            <p className="text-sm text-slate-600">
+              登録企業の選考状況を一目で追えます。
+            </p>
+          </div>
           <Link
             to="/company-register"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition"
+            className="app-button app-button-primary inline-flex items-center gap-2 text-white px-4 py-2.5 rounded-2xl font-bold text-sm shadow-sm"
           >
-            + 新しい企業を追加
+            <MaterialIcon name="add" className="text-[20px] text-white" />
+            新しい企業を追加
           </Link>
         </header>
 
         {loading ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+          <div className="section-card p-12 text-center text-slate-500">
             読み込み中...
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="section-card overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm font-semibold">
+                <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 text-sm font-semibold">
                   <th className="p-4 pl-6">企業名</th>
                   <th className="p-4">業界 / 業種</th>
                   <th className="p-4">AIアシスト</th>
                   <th className="p-4 pr-6">選考ステータス</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white/70">
                 {companies.map((company) => (
                   <tr
                     key={company.id}
-                    className="hover:bg-slate-50 transition text-sm"
+                    className="hover:bg-slate-50/80 transition text-sm"
                   >
                     <td className="p-4 pl-6 font-bold text-slate-800">
                       {company.company_name}
@@ -196,9 +230,13 @@ export default function CompanyList() {
                             "research",
                           )
                         }
-                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-indigo-200 transition"
+                        className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-indigo-200 transition"
                       >
-                        🔍 企業研究
+                        <MaterialIcon
+                          name="search"
+                          className="text-[16px] text-indigo-700"
+                        />
+                        企業研究
                       </button>
                       <button
                         onClick={() =>
@@ -208,9 +246,13 @@ export default function CompanyList() {
                             "motive",
                           )
                         }
-                        className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-purple-200 transition"
+                        className="inline-flex items-center gap-1 bg-purple-50 hover:bg-purple-100 text-purple-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-purple-200 transition"
                       >
-                        ✍️ 志望動機案
+                        <MaterialIcon
+                          name="edit_note"
+                          className="text-[16px] text-purple-700"
+                        />
+                        志望動機案
                       </button>
                     </td>
 
@@ -241,8 +283,9 @@ export default function CompanyList() {
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
               <header className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                <h3 className="font-bold text-slate-800 text-lg">
-                  🤖 Gemini AI 解析結果: {activeCompanyName}
+                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                  <MaterialIcon name="smart_toy" className="text-[20px]" />
+                  Gemini AI 解析結果: {activeCompanyName}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}

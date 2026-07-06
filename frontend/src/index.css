@@ -1,18 +1,24 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
+  --text: #5d6472;
+  --text-h: #0f172a;
+  --bg: #f5f7fb;
+  --panel: rgba(255, 255, 255, 0.82);
+  --border: rgba(148, 163, 184, 0.24);
+  --code-bg: #eef2ff;
+  --accent: #2563eb;
+  --accent-bg: rgba(37, 99, 235, 0.12);
+  --accent-border: rgba(37, 99, 235, 0.36);
+  --accent-strong: #1d4ed8;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --social-bg: rgba(255, 255, 255, 0.7);
   --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    rgba(15, 23, 42, 0.08) 0 16px 30px -16px,
+    rgba(15, 23, 42, 0.06) 0 8px 16px -8px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: Inter, "Segoe UI", Roboto, sans-serif;
+  --heading: Inter, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -33,25 +39,52 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
+    --text-h: #f8fafc;
+    --bg: #0b1120;
+    --panel: rgba(15, 23, 42, 0.82);
+    --border: rgba(148, 163, 184, 0.14);
+    --code-bg: #172036;
+    --accent: #60a5fa;
+    --accent-bg: rgba(96, 165, 250, 0.16);
+    --accent-border: rgba(96, 165, 250, 0.36);
+    --accent-strong: #93c5fd;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --social-bg: rgba(15, 23, 42, 0.64);
     --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+      rgba(0, 0, 0, 0.5) 0 16px 30px -16px, rgba(0, 0, 0, 0.3) 0 8px 16px -8px;
   }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  .material-icon {
+    color: #dbeafe;
   }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(37, 99, 235, 0.14),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(14, 165, 233, 0.1),
+      transparent 28%
+    ),
+    var(--bg);
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
+  background: transparent;
 }
 
 #root {
@@ -59,11 +92,16 @@ body {
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  border-inline: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    transparent 240px
+  );
+  backdrop-filter: blur(14px);
 }
 
 h1,
@@ -75,7 +113,7 @@ h2 {
 
 h1 {
   font-size: 56px;
-  letter-spacing: -1.68px;
+  letter-spacing: -1.84px;
   margin: 32px 0;
   @media (max-width: 1024px) {
     font-size: 36px;
@@ -93,6 +131,88 @@ h2 {
 }
 p {
   margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+.material-icon {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 500,
+    "GRAD" 0,
+    "opsz" 24;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+  color: var(--accent);
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100svh;
+}
+
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.app-nav-link,
+.app-button {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.app-nav-link:hover,
+.app-button:hover {
+  transform: translateY(-1px);
+}
+
+.app-button-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: white;
+}
+
+.app-button-primary:hover {
+  box-shadow: 0 18px 26px -18px rgba(37, 99, 235, 0.7);
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.section-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.section-card-muted {
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--text-h);
 }
 
 code,

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import MaterialIcon from "../components/MaterialIcon";
 
 export default function MailList() {
   const [mails, setMails] = useState([]);
@@ -73,201 +75,129 @@ export default function MailList() {
 
   if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        就活メールを収穫中（フィルタリング中）...
+      <div className="min-h-screen soft-grid flex items-center justify-center p-6">
+        <div className="section-card glass-panel p-8 text-center max-w-md w-full">
+          <MaterialIcon name="mail_lock" className="text-[36px] mb-3" />
+          <div className="font-semibold text-slate-900 mb-1">
+            就活メールを収集しています
+          </div>
+          <div className="text-sm text-slate-500">
+            フィルタリング結果を読み込んでいます...
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: "20px",
-        padding: "20px",
-        height: "80vh",
-        fontFamily: "sans-serif",
-      }}
-    >
-      {/* 左側：フィルター済みメール一覧 */}
-      <div
-        style={{
-          flex: 1,
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          overflowY: "auto",
-          backgroundColor: "#fff",
-        }}
-      >
-        <h2
-          style={{
-            padding: "15px",
-            borderBottom: "1px solid #eee",
-            margin: 0,
-            backgroundColor: "#f8f9fa",
-            fontSize: "18px",
-          }}
-        >
-          📬 厳選された就活メール ({mails.length}件)
-        </h2>
-        {mails.length === 0 ? (
-          <p style={{ padding: "20px", color: "#666" }}>
-            重要な就活メールは現在ありません。メルマガは綺麗に弾かれています！
-          </p>
-        ) : (
-          mails.map((mail) => (
-            <div
-              key={mail.id}
-              onClick={() => handleMailClick(mail.id)}
-              style={{
-                padding: "15px",
-                borderBottom: "1px solid #eee",
-                cursor: "pointer",
-                backgroundColor:
-                  selectedMail?.id === mail.id ? "#e8f0fe" : "transparent",
-                transition: "background 0.2s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  selectedMail?.id === mail.id ? "#e8f0fe" : "#f5f5f5")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  selectedMail?.id === mail.id ? "#e8f0fe" : "transparent")
-              }
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "between",
-                  marginBottom: "5px",
-                }}
-              >
-                <strong
-                  style={{
-                    fontSize: "14px",
-                    color: "#333",
-                    display: "block",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                    width: "200px",
-                  }}
-                >
-                  {mail.from.split("<")[0]} {/* 名前部分だけ抽出 */}
-                </strong>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#999",
-                    marginLeft: "auto",
-                  }}
-                >
-                  {mail.date.substring(0, 16)}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                  marginBottom: "5px",
-                  color: "#1a73e8",
-                }}
-              >
-                {mail.subject}
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {mail.snippet}
+    <div className="min-h-screen soft-grid p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl grid lg:grid-cols-[0.95fr_1.05fr] gap-5">
+        <div className="section-card glass-panel overflow-hidden text-left min-h-[70vh]">
+          <div className="p-5 border-b border-slate-200/70 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <MaterialIcon name="mail" className="text-[24px]" />
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 m-0">
+                  厳選された就活メール
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {mails.length}件を表示しています
+                </p>
               </div>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* 右側：メール本文のプレビュー表示 */}
-      <div
-        style={{
-          flex: 1,
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          padding: "20px",
-          backgroundColor: "#fafafa",
-          overflowY: "auto",
-        }}
-      >
-        {selectedMail ? (
-          detailLoading ? (
-            <div
-              style={{ color: "#666", textAlign: "center", marginTop: "50px" }}
+            <Link
+              to="/dashboard"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
             >
-              本文を読み込み中...
+              <MaterialIcon name="arrow_back" className="text-[16px]" />
+              戻る
+            </Link>
+          </div>
+          {mails.length === 0 ? (
+            <div className="p-8 text-slate-500">
+              重要な就活メールは現在ありません。メルマガは綺麗に弾かれています！
             </div>
           ) : (
-            <div>
-              <h3
-                style={{
-                  margin: "0 0 10px 0",
-                  color: "#333",
-                  fontSize: "20px",
-                  borderBottom: "2px solid #1a73e8",
-                  paddingBottom: "10px",
-                }}
-              >
-                {selectedMail.subject}
-              </h3>
-              <div
-                style={{
-                  marginBottom: "15px",
-                  fontSize: "13px",
-                  color: "#555",
-                }}
-              >
-                <strong>差出人:</strong> {selectedMail.from} <br />
-                <strong>日時:</strong> {selectedMail.date}
-              </div>
-              <div
-                style={{
-                  backgroundColor: "#fff",
-                  padding: "15px",
-                  borderRadius: "6px",
-                  border: "1px solid #ddd",
-                  whiteSpace: "pre-wrap", // 改行をそのまま反映させる
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                  color: "#333",
-                }}
-              >
-                {selectedMail.body}
-              </div>
+            <div className="divide-y divide-slate-200/70 max-h-[calc(70vh-73px)] overflow-auto">
+              {mails.map((mail) => (
+                <button
+                  key={mail.id}
+                  type="button"
+                  onClick={() => handleMailClick(mail.id)}
+                  className={`w-full text-left p-5 transition app-nav-link ${selectedMail?.id === mail.id ? "bg-blue-50/90" : "hover:bg-slate-50/90"}`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <strong className="text-sm text-slate-900 block truncate max-w-[70%]">
+                      {mail.from.split("<")[0]}
+                    </strong>
+                    <span className="text-xs text-slate-400 shrink-0">
+                      {mail.date.substring(0, 16)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2 text-blue-700 font-semibold text-sm">
+                    <MaterialIcon name="subject" className="text-[18px]" />
+                    {mail.subject}
+                  </div>
+                  <div className="text-xs text-slate-500 leading-5 line-clamp-2">
+                    {mail.snippet}
+                  </div>
+                </button>
+              ))}
             </div>
-          )
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-              color: "#999",
-              flexDirection: "column",
-            }}
-          >
-            <span style={{ fontSize: "48px" }}>👀</span>
-            <p>
-              左側の一覧からメールをクリックすると、
-              <br />
-              ここに本文がリアルタイムに表示されます。
-            </p>
-          </div>
-        )}
+          )}
+        </div>
+
+        <div className="section-card glass-panel overflow-hidden p-5 sm:p-6 text-left min-h-[70vh]">
+          {selectedMail ? (
+            detailLoading ? (
+              <div className="h-full flex items-center justify-center text-slate-500">
+                本文を読み込み中...
+              </div>
+            ) : (
+              <div className="h-full flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-200/70 pb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <MaterialIcon name="mail" className="text-[24px]" />
+                      {selectedMail.subject}
+                    </h3>
+                    <div className="text-sm text-slate-600 space-y-1">
+                      <div className="inline-flex items-center gap-2 mr-4">
+                        <MaterialIcon name="person" className="text-[18px]" />
+                        {selectedMail.from}
+                      </div>
+                      <div className="inline-flex items-center gap-2">
+                        <MaterialIcon name="schedule" className="text-[18px]" />
+                        {selectedMail.date}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
+                    <MaterialIcon
+                      name="verified"
+                      className="text-[16px] text-emerald-700"
+                    />
+                    解析済
+                  </span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 text-sm leading-7 text-slate-700 whitespace-pre-wrap shadow-sm flex-1 overflow-auto">
+                  {selectedMail.body}
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center gap-4">
+              <MaterialIcon
+                name="visibility"
+                className="text-[56px] text-slate-300"
+              />
+              <p className="text-sm leading-6 max-w-xs">
+                左側の一覧からメールをクリックすると、ここに本文がリアルタイムに表示されます。
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
