@@ -51,8 +51,8 @@ export default function Profile() {
       const response = await fetch("http://localhost:8080/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: json.stringify({
-          uid,
+        body: JSON.stringify({
+          uid: Number(uid),
           name,
           university,
           faculty,
