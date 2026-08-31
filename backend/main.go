@@ -20,7 +20,7 @@ import (
 func main() {
 	// 各種初期化処理の呼び出し
 	err := godotenv.Load()
-	if err != nil{
+	if err != nil {
 		log.Println("Error loading .env file")
 	}
 	config.InitDB()
@@ -32,7 +32,7 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "http://localhost:5173")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(204)
 			return
@@ -108,7 +108,11 @@ func main() {
 	})
 
 	// 各種APIエンドポイントを外部ハンドラーにマッピング
-	r.GET("/api/events", handlers.HandleEvents)
+	r.GET("/api/events", handlers.GetEventsHandler)
+	r.POST("/api/events", handlers.CreateEventHandler)
+	r.PUT("/api/events/:id", handlers.UpdateEventHandler)
+	r.DELETE("/api/events/:id", handlers.DeleteEventHandler)
+	r.POST("/api/extract-event", handlers.ExtractEventFromMailHandler)
 	r.GET("/api/fetch-mails", handlers.HandleFetchMails)
 	r.GET("/api/mails/:id", handlers.GetMailDetailHandler)
 	r.GET("/api/mail-filters", handlers.GetMailFilterHandler)

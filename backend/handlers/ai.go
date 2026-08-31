@@ -15,7 +15,7 @@ import (
 
 // AIRequest フロントから届くリクエスト
 type AIRequest struct {
-	UserID     int    `json:"user_id"`     // 👤 ユーザー情報を参照するために追加
+	UserID     int    `json:"user_id"` // 👤 ユーザー情報を参照するために追加
 	CompanyID  int    `json:"company_id"`
 	PromptType string `json:"prompt_type"` // "research" または "motive"
 }
@@ -28,7 +28,8 @@ type GeminiPart struct {
 	Text string `json:"text"`
 }
 type GeminiRequest struct {
-	Contents []GeminiContent `json:"contents"`
+	Contents         []GeminiContent        `json:"contents"`
+	GenerationConfig map[string]interface{} `json:"generationConfig,omitempty"`
 }
 type GeminiResponse struct {
 	Candidates []struct {
@@ -87,8 +88,8 @@ func AnalyzeCompanyHandler(c *gin.Context) {
 以下の構成で、プロフィールにある強みや経験が企業の事業内容とどのように結びついているかが明確に伝わる文章を作成してください。
 ■ 結論（なぜこの企業なのか、何に魅力を感じたか）
 ■ 理由（自身の経験・スキルが、企業の業界・業種や強みとどうマッチしているか）
-■ 入社後に挑戦したいこと（自身の技術や強みを活かしてどう貢献したいか）`, 
-		companyName, industry, businessType, userSkills, userPR)
+■ 入社後に挑戦したいこと（自身の技術や強みを活かしてどう貢献したいか）`,
+			companyName, industry, businessType, userSkills, userPR)
 
 	} else {
 		systemPrompt = fmt.Sprintf(`あなたは優秀な企業研究アナリストです。
@@ -117,8 +118,8 @@ func AnalyzeCompanyHandler(c *gin.Context) {
 2. **[質問内容]**
    - *この質問の意図・対策:* ワンポイントアドバイス
 3. **[質問内容]**
-   - *この質問の意図・対策:* ワンポイントアドバイス`, 
-		companyName, industry, businessType, userSkills, userPR, userSkills)
+   - *この質問の意図・対策:* ワンポイントアドバイス`,
+			companyName, industry, businessType, userSkills, userPR, userSkills)
 	}
 
 	// 4. Gemini APIキーの取得

@@ -26,10 +26,29 @@ export default function Dashboard() {
   const [loadingMails, setLoadingMails] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [errorMail, setErrorMail] = useState("");
+  const [calendarVersion, setCalendarVersion] = useState(0);
+  const [eventFormOpen, setEventFormOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    id: null,
+    company: "",
+    title: "",
+    date: "",
+    start_time: "",
+    end_time: "",
+    description: "",
+  });
 
   // 🔄 1. 選考予定（カレンダー）を取得
   useEffect(() => {
-    fetch("http://localhost:8080/api/events")
+    const userUid = localStorage.getItem("login_user_uid") || "";
+    const userEmail = localStorage.getItem("login_user_email") || "";
+    const userQuery = userUid
+      ? `?uid=${encodeURIComponent(userUid)}`
+      : userEmail
+        ? `?email=${encodeURIComponent(userEmail)}`
+        : "";
+
+    fetch(`http://localhost:8080/api/events${userQuery}`)
       .then((res) => {
         if (!res.ok) throw new Error("カレンダーデータの取得に失敗しました");
         return res.json();
@@ -37,16 +56,19 @@ export default function Dashboard() {
       .then((data) => {
         const formattedEvents = data.map((event) => {
           const times = event.time.split(" - ");
+          const date = event.date.slice(0, 10);
           return {
             id: event.id,
             title: `${event.company} | ${event.title}`,
-            start: `${event.date}T${times[0]}:00`,
-            end: `${event.date}T${times[1]}:00`,
+            start: `${date}T${times[0]}:00`,
+            end: `${date}T${times[1]}:00`,
             extendedProps: {
+              id: event.id,
               company: event.company,
               jobTitle: event.title,
               timeStr: event.time,
-              dateStr: event.date,
+              dateStr: date,
+              description: event.description || "",
             },
           };
         });
@@ -57,7 +79,7 @@ export default function Dashboard() {
         console.error(err);
         setLoadingCalendar(false);
       });
-  }, []); // 👈 カレンダーのuseEffectはここで綺麗に閉じる！
+  }, [calendarVersion]);
 
   // 🔄 2. 就活メール（最新5件）を取得
   useEffect(() => {
@@ -96,6 +118,58 @@ export default function Dashboard() {
 
   const handleEventClick = (info) => {
     setSelectedEvent(info.event.extendedProps);
+  };
+
+  const openNewEventForm = (date = "") => {
+    setEventForm({ id: null, company: "", title: "", date: date.slice(0, 10), start_time: "", end_time: "", description: "" });
+    setEventFormOpen(true);
+  };
+
+  const openEditEventForm = () => {
+    setEventForm({
+      id: selectedEvent.id,
+      company: selectedEvent.company,
+      title: selectedEvent.jobTitle,
+      date: selectedEvent.dateStr,
+      start_time: selectedEvent.timeStr.split(" - ")[0],
+      end_time: selectedEvent.timeStr.split(" - ")[1],
+      description: selectedEvent.description || "",
+    });
+    setEventFormOpen(true);
+  };
+
+  const getEventQuery = () => {
+    const uid = localStorage.getItem("login_user_uid") || "";
+    const email = localStorage.getItem("login_user_email") || "";
+    return uid ? `?uid=${encodeURIComponent(uid)}` : email ? `?email=${encodeURIComponent(email)}` : "";
+  };
+
+  const saveEvent = async (event) => {
+    const method = event.id ? "PUT" : "POST";
+    const url = `http://localhost:8080/api/events${event.id ? `/${event.id}` : ""}${getEventQuery()}`;
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...event, description: event.description }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "イベントの保存に失敗しました");
+    setEventFormOpen(false);
+    setSelectedEvent(null);
+    setCalendarVersion((version) => version + 1);
+  };
+
+  const deleteSelectedEvent = async () => {
+    if (!window.confirm("この予定を削除しますか？")) return;
+    try {
+      const response = await fetch(`http://localhost:8080/api/events/${selectedEvent.id}${getEventQuery()}`, { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "イベントの削除に失敗しました");
+      setSelectedEvent(null);
+      setCalendarVersion((version) => version + 1);
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
@@ -220,6 +294,13 @@ export default function Dashboard() {
           <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 text-left">
             <MaterialIcon name="calendar_month" className="text-[20px]" />
             選考カレンダー
+            <button
+              onClick={() => openNewEventForm()}
+              className="app-button app-button-primary ml-auto inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold"
+            >
+              <MaterialIcon name="add" className="text-[18px]" />
+              予定を作成
+            </button>
           </h2>
           {loadingCalendar ? (
             <div className="section-card p-12 text-slate-500">
@@ -234,6 +315,7 @@ export default function Dashboard() {
                   locale="ja"
                   events={events}
                   eventClick={handleEventClick}
+                  dateClick={(info) => openNewEventForm(info.dateStr)}
                   headerToolbar={{
                     left: "prev,next today",
                     center: "title",
@@ -276,6 +358,14 @@ export default function Dashboard() {
                         <MaterialIcon name="schedule" className="text-[16px]" />
                         時間: {selectedEvent.timeStr}
                       </p>
+                      <div className="flex gap-2 pt-2">
+                        <button onClick={openEditEventForm} className="app-button flex-1 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white">
+                          <MaterialIcon name="edit" className="mr-1 text-[16px]" />編集
+                        </button>
+                        <button onClick={deleteSelectedEvent} className="app-button flex-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                          <MaterialIcon name="delete" className="mr-1 text-[16px]" />削除
+                        </button>
+                      </div>
                     </div>
                     <button
                       onClick={() => setSelectedEvent(null)}
@@ -293,6 +383,34 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {eventFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+            <form
+              onSubmit={(event) => { event.preventDefault(); saveEvent(eventForm).catch((error) => alert(error.message)); }}
+              className="section-card glass-panel w-full max-w-lg space-y-4 p-6 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-900">{eventForm.id ? "予定を編集" : "予定を作成"}</h2>
+                <button type="button" onClick={() => setEventFormOpen(false)} className="text-slate-500"><MaterialIcon name="close" /></button>
+              </div>
+              {[["company", "企業名", "text"], ["title", "イベント名", "text"], ["date", "開催日", "date"], ["start_time", "開始時刻", "time"], ["end_time", "終了時刻", "time"]].map(([field, label, type]) => (
+                <label key={field} className="block text-sm font-semibold text-slate-700">
+                  {label}
+                  <input required value={eventForm[field]} type={type} onChange={(e) => setEventForm({ ...eventForm, [field]: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" />
+                </label>
+              ))}
+              <label className="block text-sm font-semibold text-slate-700">
+                メモ
+                <textarea value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" />
+              </label>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setEventFormOpen(false)} className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">キャンセル</button>
+                <button type="submit" className="app-button app-button-primary rounded-xl px-4 py-2 text-sm font-semibold">保存</button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* メール解析セクション */}
         <div className="text-left">

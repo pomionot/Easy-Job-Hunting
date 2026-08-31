@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import MaterialIcon from "../components/MaterialIcon";
+import EventExtractModal from "../components/EventExtractModal";
 
 export default function MailList() {
   const [mails, setMails] = useState([]);
   const [selectedMail, setSelectedMail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const userUid = localStorage.getItem("login_user_uid") || "";
   const userEmail = localStorage.getItem("login_user_email") || "";
 
@@ -184,6 +186,14 @@ export default function MailList() {
                 <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 text-sm leading-7 text-slate-700 whitespace-pre-wrap shadow-sm flex-1 overflow-auto">
                   {selectedMail.body}
                 </div>
+
+                <button
+                  onClick={() => setIsEventModalOpen(true)}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:shadow-lg transition inline-flex items-center justify-center gap-2"
+                >
+                  <MaterialIcon name="event_note" className="text-[20px]" />
+                  このメールからカレンダーに登録
+                </button>
               </div>
             )
           ) : (
@@ -198,6 +208,15 @@ export default function MailList() {
             </div>
           )}
         </div>
+
+        <EventExtractModal
+          mail={selectedMail}
+          isOpen={isEventModalOpen}
+          onClose={() => setIsEventModalOpen(false)}
+          onSave={() => {
+            // イベント登録後の処理（必要に応じて）
+          }}
+        />
       </div>
     </div>
   );
