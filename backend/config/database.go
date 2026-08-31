@@ -38,13 +38,15 @@ func ensureSchema() {
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 		`,
 		`
-		CREATE TABLE IF NOT EXISTS mail_filters (
+		CREATE TABLE IF NOT EXISTS mail_filter_entries (
+			id INT NOT NULL AUTO_INCREMENT,
 			user_id INT NOT NULL,
-			include_emails TEXT,
-			exclude_emails TEXT,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			PRIMARY KEY (user_id),
-			CONSTRAINT fk_mail_filters_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			entry_type VARCHAR(16) NOT NULL,
+			email VARCHAR(255) NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY uk_mail_filter_entries (user_id, entry_type, email),
+			CONSTRAINT fk_mail_filter_entries_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 		`,
 		`

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type MailFilterEntry struct {
+	ID       int64  `json:"id"`
+	Type     string `json:"type"`
+	Email    string `json:"email"`
+	UserID   int64  `json:"user_id"`
+}
+
 type MailFilterRequest struct {
 	UID           int64  `json:"uid"`
 	IncludeEmails string `json:"include_emails"`
@@ -18,69 +24,46 @@ type MailFilterRequest struct {
 }
 
 type MailFilterResponse struct {
-	UID           int64  `json:"uid"`
-	IncludeEmails string `json:"include_emails"`
-	ExcludeEmails string `json:"exclude_emails"`
+	UID            int64           `json:"uid"`
+	IncludeEmails  []MailFilterEntry `json:"include_emails"`
+	ExcludeEmails  []MailFilterEntry `json:"exclude_emails"`
 }
 
-func parseEmailList(value string) []string {
-	parts := strings.Split(value, ",")
-	items := make([]string, 0, len(parts))
-	seen := map[string]bool{}
-	for _, p := range parts {
-		email := strings.TrimSpace(p)
-		email = strings.Trim(email, "<>\"'")
-		if email == "" {
-			continue
-		}
-		email = strings.ToLower(email)
-		if !seen[email] {
-			seen[email] = true
-			items = append(items, email)
-		}
-	}
-	return items
-}
-
-func serializeEmailList(items []string) string {
-	if len(items) == 0 {
+func normalizeEmail(value string) string {
+	value = strings.TrimSpace(value)
+	value = strings.Trim(value, "<>\"'")
+	if value == "" {
 		return ""
 	}
-	cleaned := make([]string, 0, len(items))
-	seen := map[string]bool{}
-	for _, item := range items {
-		email := strings.TrimSpace(item)
-		email = strings.Trim(email, "<>\"'")
-		email = strings.ToLower(email)
-		if email == "" || seen[email] {
-			continue
-		}
-		seen[email] = true
-		cleaned = append(cleaned, email)
-	}
-	return strings.Join(cleaned, ",")
-}
-
-func valueOrEmpty(v sql.NullString) string {
-	if v.Valid {
-		return v.String
-	}
-	return ""
+	return strings.ToLower(value)
 }
 
 func loadMailFilterSettings(uid int64) ([]string, []string, error) {
-	var includeEmails sql.NullString
-	var excludeEmails sql.NullString
-
-	err := config.DB.QueryRow("SELECT include_emails, exclude_emails FROM mail_filters WHERE user_id = ?", uid).Scan(&includeEmails, &excludeEmails)
-	if err == sql.ErrNoRows {
-		return nil, nil, nil
-	}
+	rows, err := config.DB.Query(`SELECT entry_type, email FROM mail_filter_entries WHERE user_id = ? ORDER BY id ASC`, uid)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer rows.Close()
 
-	return parseEmailList(valueOrEmpty(includeEmails)), parseEmailList(valueOrEmpty(excludeEmails)), nil
+	include := []string{}
+	exclude := []string{}
+	for rows.Next() {
+		var entryType string
+		var email string
+		if err := rows.Scan(&entryType, &email); err != nil {
+			return nil, nil, err
+		}
+		email = normalizeEmail(email)
+		if email == "" {
+			continue
+		}
+		if entryType == "include" {
+			include = append(include, email)
+		} else if entryType == "exclude" {
+			exclude = append(exclude, email)
+		}
+	}
+	return include, exclude, nil
 }
 
 func GetMailFilterHandler(c *gin.Context) {
@@ -96,22 +79,30 @@ func GetMailFilterHandler(c *gin.Context) {
 		return
 	}
 
-	var includeEmails, excludeEmails sql.NullString
-	query := "SELECT include_emails, exclude_emails FROM mail_filters WHERE user_id = ?"
-	if err := config.DB.QueryRow(query, uid).Scan(&includeEmails, &excludeEmails); err != nil {
-		if err == sql.ErrNoRows {
-			c.JSON(http.StatusOK, MailFilterResponse{UID: uid, IncludeEmails: "", ExcludeEmails: ""})
-			return
-		}
+	rows, err := config.DB.Query(`SELECT id, entry_type, email FROM mail_filter_entries WHERE user_id = ? ORDER BY id ASC`, uid)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールフィルターの取得に失敗しました: " + err.Error()})
 		return
 	}
+	defer rows.Close()
 
-	c.JSON(http.StatusOK, MailFilterResponse{
-		UID:           uid,
-		IncludeEmails: valueOrEmpty(includeEmails),
-		ExcludeEmails: valueOrEmpty(excludeEmails),
-	})
+	response := MailFilterResponse{UID: uid}
+	for rows.Next() {
+		var item MailFilterEntry
+		if err := rows.Scan(&item.ID, &item.Type, &item.Email); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "メールフィルターの読込に失敗しました: " + err.Error()})
+			return
+		}
+		item.Email = normalizeEmail(item.Email)
+		item.UserID = uid
+		if item.Type == "include" {
+			response.IncludeEmails = append(response.IncludeEmails, item)
+		} else if item.Type == "exclude" {
+			response.ExcludeEmails = append(response.ExcludeEmails, item)
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func UpdateMailFilterHandler(c *gin.Context) {
@@ -120,26 +111,129 @@ func UpdateMailFilterHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
 		return
 	}
-
 	if req.UID <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "uidが不正です"})
 		return
 	}
 
-	includeText := serializeEmailList(parseEmailList(req.IncludeEmails))
-	excludeText := serializeEmailList(parseEmailList(req.ExcludeEmails))
-
-	query := `
-		INSERT INTO mail_filters (user_id, include_emails, exclude_emails)
-		VALUES (?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-		include_emails = VALUES(include_emails),
-		exclude_emails = VALUES(exclude_emails);
-	`
-	if _, err := config.DB.Exec(query, req.UID, includeText, excludeText); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールフィルターの保存に失敗しました: " + err.Error()})
+	// 既存のレコードを削除してから保存し直す（単純な構成）
+	if _, err := config.DB.Exec("DELETE FROM mail_filter_entries WHERE user_id = ?", req.UID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "既存フィルターのクリアに失敗しました: " + err.Error()})
 		return
 	}
 
+	for _, email := range strings.Split(req.IncludeEmails, ",") {
+		email = normalizeEmail(email)
+		if email == "" {
+			continue
+		}
+		if _, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, 'include', ?)", req.UID, email); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "含めるメールアドレスの保存に失敗しました: " + err.Error()})
+			return
+		}
+	}
+	for _, email := range strings.Split(req.ExcludeEmails, ",") {
+		email = normalizeEmail(email)
+		if email == "" {
+			continue
+		}
+		if _, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, 'exclude', ?)", req.UID, email); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "除外メールアドレスの保存に失敗しました: " + err.Error()})
+			return
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "メールフィルターを保存しました"})
+}
+
+func AddMailFilterEntryHandler(c *gin.Context) {
+	var req struct {
+		UID   int64  `json:"uid"`
+		Type  string `json:"type"`
+		Email string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
+		return
+	}
+	if req.UID <= 0 || req.Type == "" || req.Type != "include" && req.Type != "exclude" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uidとtypeが正しくありません"})
+		return
+	}
+	req.Email = normalizeEmail(req.Email)
+	if req.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "メールアドレスが空です"})
+		return
+	}
+
+	res, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, ?, ?)", req.UID, req.Type, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールアドレスの追加に失敗しました: " + err.Error()})
+		return
+	}
+	id, _ := res.LastInsertId()
+	c.JSON(http.StatusOK, gin.H{"id": id, "type": req.Type, "email": req.Email})
+}
+
+func UpdateMailFilterEntryHandler(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "idの形式が正しくありません"})
+		return
+	}
+
+	var req struct {
+		UID   int64  `json:"uid"`
+		Type  string `json:"type"`
+		Email string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
+		return
+	}
+	if req.UID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uidが不正です"})
+		return
+	}
+	req.Email = normalizeEmail(req.Email)
+	if req.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "メールアドレスが空です"})
+		return
+	}
+	if req.Type != "include" && req.Type != "exclude" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "typeが正しくありません"})
+		return
+	}
+
+	if _, err := config.DB.Exec("UPDATE mail_filter_entries SET entry_type = ?, email = ? WHERE id = ? AND user_id = ?", req.Type, req.Email, id, req.UID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールアドレスの更新に失敗しました: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
+}
+
+func DeleteMailFilterEntryHandler(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "idの形式が正しくありません"})
+		return
+	}
+
+	var req struct { UID int64 `json:"uid"` }
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
+		return
+	}
+	if req.UID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uidが不正です"})
+		return
+	}
+
+	if _, err := config.DB.Exec("DELETE FROM mail_filter_entries WHERE id = ? AND user_id = ?", id, req.UID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "削除に失敗しました: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "削除しました"})
 }
