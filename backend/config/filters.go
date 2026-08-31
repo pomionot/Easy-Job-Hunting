@@ -1,6 +1,8 @@
 package config
 
-import "strings"
+import (
+    "strings"
+)
 
 // 就活関連のキーワード（含めたいキーワード）
 var IncludeKeywords = []string{
@@ -19,13 +21,51 @@ var ExcludeKeywords = []string{
     "配信停止",
 }
 
-// BuildGmailQuery は Gmail API 用の検索クエリを生成します。
-// 例: "面接 OR 選考 OR インターン -メルマガ -おすすめ情報"
-func BuildGmailQuery() string {
+func normalizeEmailAddress(value string) string {
+    value = strings.TrimSpace(value)
+    value = strings.Trim(value, "<>\"'")
+    if value == "" {
+        return ""
+    }
+    if idx := strings.Index(value, "<"); idx >= 0 && strings.Contains(value, ">") {
+        if end := strings.Index(value[idx+1:], ">") ; end >= 0 {
+            value = strings.TrimSpace(value[idx+1 : idx+1+end])
+        }
+    }
+    if idx := strings.Index(value, " "); idx >= 0 {
+        value = strings.TrimSpace(value[:idx])
+    }
+    return strings.ToLower(value)
+}
+
+func normalizeEmailList(values []string) []string {
+    seen := map[string]bool{}
+    result := make([]string, 0, len(values))
+    for _, raw := range values {
+        email := normalizeEmailAddress(raw)
+        if email == "" {
+            continue
+        }
+        if !seen[email] {
+            seen[email] = true
+            result = append(result, email)
+        }
+    }
+    return result
+}
+
+func BuildGmailQuery(includeEmails, excludeEmails []string) string {
     var parts []string
 
-    if len(IncludeKeywords) > 0 {
-        parts = append(parts, strings.Join(IncludeKeywords, " OR "))
+    keywordGroup := strings.Join(IncludeKeywords, " OR ")
+    if keywordGroup != "" {
+        parts = append(parts, keywordGroup)
+    }
+
+    for _, email := range normalizeEmailList(includeEmails) {
+        if email != "" {
+            parts = append(parts, "from:"+email)
+        }
     }
 
     for _, ex := range ExcludeKeywords {
@@ -34,6 +74,12 @@ func BuildGmailQuery() string {
             continue
         }
         parts = append(parts, "-"+ex)
+    }
+
+    for _, email := range normalizeEmailList(excludeEmails) {
+        if email != "" {
+            parts = append(parts, "-from:"+email)
+        }
     }
 
     return strings.Join(parts, " ")

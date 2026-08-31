@@ -15,6 +15,7 @@ const navItems = [
   },
   { to: "/company-register", label: "企業情報登録", icon: "domain_add" },
   { to: "/company-list", label: "企業管理リスト", icon: "stacks" },
+  { to: "/mail-filters", label: "メールフィルター設定", icon: "filter_alt" },
   { to: "/profile", label: "プロフィール登録", icon: "person" },
 ];
 

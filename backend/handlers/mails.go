@@ -74,7 +74,29 @@ func GetMailsHandler(c *gin.Context) {
 		return
 	}
 
-	// 💡 ログ1: トークン取得チェック
+	var uid int64
+	if c.Query("uid") != "" {
+		uid, err = strconv.ParseInt(c.Query("uid"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "uidの形式が正しくありません"})
+			return
+		}
+	} else if c.Query("email") != "" {
+		var email string
+		if err := config.DB.QueryRow("SELECT id FROM users WHERE email = ?", c.Query("email")).Scan(&uid); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザーIDの取得に失敗しました: " + err.Error()})
+			return
+		}
+		email = c.Query("email")
+		_ = email
+	}
+
+	includeEmails, excludeEmails, err := loadMailFilterSettings(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールフィルターの取得に失敗しました: " + err.Error()})
+		return
+	}
+
 	if len(accessToken) > 10 {
 		fmt.Printf("🔑 [一覧-DB成功] %s のトークンを取得しました (冒頭: %s...)\n", userRef, accessToken[:10])
 	} else {
@@ -84,7 +106,7 @@ func GetMailsHandler(c *gin.Context) {
 	token := &oauth2.Token{AccessToken: accessToken}
 	client := oauth2.NewClient(ctx, oauth2.StaticTokenSource(token))
 
-	query := config.BuildGmailQuery()
+	query := config.BuildGmailQuery(includeEmails, excludeEmails)
 	fmt.Println("🔍 [一覧-Gmailクエリ] 実行するクエリ:", query)
 
 	srv, err := gmail.NewService(ctx, option.WithHTTPClient(client))

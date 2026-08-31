@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Dashboard from "./Dashboard"; // さっき作った画面をインポート
 import MailList from "./pages/MailList";
+import MailFilterSettings from "./pages/MailFilterSettings";
 import Profile from "./pages/Profile";
 import CompanyRegister from "./pages/CompanyRegister";
 import CompanyList from "./pages/CompanyList";
@@ -160,6 +161,7 @@ export default function App() {
           }
         />
         <Route path="/mails" element={<MailList />} />
+        <Route path="/mail-filters" element={<MailFilterSettings />} />
         <Route path="/company-list" element={<CompanyList />} />
       </Routes>
     </BrowserRouter>
