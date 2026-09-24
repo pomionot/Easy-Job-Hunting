@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"Easy-Job-Hunting/config"
 
@@ -143,9 +145,12 @@ func GetMailsHandler(c *gin.Context) {
 		var subject, from, date string
 		for _, h := range msg.Payload.Headers {
 			switch h.Name {
-			case "Subject":	subject = h.Value
-			case "From":	from = h.Value
-			case "Date":	date = h.Value
+			case "Subject":
+				subject = h.Value
+			case "From":
+				from = h.Value
+			case "Date":
+				date = h.Value
 			}
 		}
 
@@ -202,15 +207,18 @@ func GetMailDetailHandler(c *gin.Context) {
 	var subject, from, date string
 	for _, h := range msg.Payload.Headers {
 		switch h.Name {
-		case "Subject":	subject = h.Value
-		case "From":	from = h.Value
-		case "Date":	date = h.Value
+		case "Subject":
+			subject = h.Value
+		case "From":
+			from = h.Value
+		case "Date":
+			date = h.Value
 		}
 	}
 
-	body := msg.Snippet
-	if msg.Payload.Body != nil && msg.Payload.Body.Data != "" {
-		body = "（ここにデコードした本文が入ります）"
+	body, err := extractGmailBody(msg.Payload)
+	if err != nil || strings.TrimSpace(body) == "" {
+		body = msg.Snippet
 	}
 
 	c.JSON(http.StatusOK, MailDetail{
@@ -220,4 +228,40 @@ func GetMailDetailHandler(c *gin.Context) {
 		Date:    date,
 		Body:    body,
 	})
+}
+
+func extractGmailBody(part *gmail.MessagePart) (string, error) {
+	if part == nil {
+		return "", nil
+	}
+
+	if part.MimeType == "text/plain" && part.Body != nil && part.Body.Data != "" {
+		decoded, err := decodeGmailData(part.Body.Data)
+		return string(decoded), err
+	}
+
+	for _, child := range part.Parts {
+		body, err := extractGmailBody(child)
+		if err != nil || strings.TrimSpace(body) != "" {
+			return body, err
+		}
+	}
+
+	if part.MimeType == "text/html" && part.Body != nil && part.Body.Data != "" {
+		decoded, err := decodeGmailData(part.Body.Data)
+		if err != nil {
+			return "", err
+		}
+		return htmlTagPattern.ReplaceAllString(string(decoded), " "), nil
+	}
+
+	return "", nil
+}
+
+func decodeGmailData(value string) ([]byte, error) {
+	decoded, err := base64.RawURLEncoding.DecodeString(value)
+	if err == nil {
+		return decoded, nil
+	}
+	return base64.URLEncoding.DecodeString(value)
 }

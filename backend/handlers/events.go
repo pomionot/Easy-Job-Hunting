@@ -69,6 +69,13 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 		return
 	}
 
+	sanitizedMail := sanitizeMailForAI(req.Subject, req.From, req.Body)
+	sanitizedMail.Body = compactMailBody(sanitizedMail.Body)
+	if sanitizedMail.Body == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "解析可能なメール本文がありません"})
+		return
+	}
+
 	// プロンプトの作成：メール本文からイベント情報を抽出
 	today := time.Now().Format("2006-01-02")
 	systemPrompt := fmt.Sprintf(`あなたは就活メールの日程管理AIアシスタントです。
@@ -123,7 +130,7 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 - 時刻は24時間形式（HH:MM）で統一
 - 曜日だけで具体的な日付を推測できない場合は has_event=false とする
 - JSONだけを返す。説明やマークダウンは含めない。
-- 必ず { } で囲まれた有効なJSONを返してください。`, today, req.Subject, req.From, req.Body)
+- 必ず { } で囲まれた有効なJSONを返してください。`, today, sanitizedMail.Subject, sanitizedMail.From, sanitizedMail.Body)
 
 	// Gemini APIへのリクエスト。モデルは環境変数で差し替え可能にする。
 	model := os.Getenv("GEMINI_MODEL")
@@ -168,14 +175,13 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 		time.Sleep(wait)
 	}
 
-	log.Printf("📊 [extract-event] Gemini APIレスポンス (ステータス: %d):\n%s", resp.StatusCode, string(body))
+	log.Printf("📊 [extract-event] Gemini APIレスポンス (ステータス: %d, bytes: %d)", resp.StatusCode, len(body))
 
 	// ステータスコード確認
 	if resp.StatusCode != http.StatusOK {
 		c.JSON(resp.StatusCode, gin.H{
-			"error":   "Gemini APIがエラーを返しました",
-			"status":  resp.StatusCode,
-			"details": string(body),
+			"error":  "Gemini APIがエラーを返しました",
+			"status": resp.StatusCode,
 		})
 		return
 	}
@@ -195,10 +201,9 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 	}
 
 	if err := json.Unmarshal(body, &geminiResp); err != nil {
-		log.Printf("❌ [extract-event] JSONパースエラー: %v\nボディ: %s", err, string(body))
+		log.Printf("❌ [extract-event] JSONパースエラー: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Geminiレスポンスの解析に失敗しました",
-			"details": string(body),
+			"error": "Geminiレスポンスの解析に失敗しました",
 		})
 		return
 	}
@@ -224,7 +229,7 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 	responseText = strings.TrimPrefix(responseText, "```")
 	responseText = strings.TrimSuffix(responseText, "```")
 	responseText = strings.TrimSpace(responseText)
-	log.Printf("🤖 [extract-event] AIレスポンステキスト:\n%s", responseText)
+	log.Printf("🤖 [extract-event] AIレスポンスを受信しました (bytes: %d)", len(responseText))
 
 	// JSONレスポンスをパース
 	var extractedResp struct {
@@ -233,11 +238,10 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 	}
 
 	if err := json.Unmarshal([]byte(responseText), &extractedResp); err != nil {
-		log.Printf("⚠️  [extract-event] イベント JSON パースエラー: %v\nテキスト: %s", err, responseText)
+		log.Printf("⚠️  [extract-event] イベント JSON パースエラー: %v", err)
 		c.JSON(http.StatusOK, gin.H{
-			"has_event":    false,
-			"events":       []interface{}{},
-			"raw_response": responseText,
+			"has_event": false,
+			"events":    []interface{}{},
 		})
 		return
 	}
@@ -342,21 +346,23 @@ func CreateEventHandler(c *gin.Context) {
 		return
 	}
 
-	var uid int64
-	if uidParam := c.Query("uid"); uidParam != "" {
-		uid, _ = strconv.ParseInt(uidParam, 10, 64)
-	} else if emailParam := c.Query("email"); emailParam != "" {
-		config.DB.QueryRow("SELECT id FROM users WHERE email = ?", emailParam).Scan(&uid)
-	}
-
-	if uid == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザーIDが必要です"})
+	uid, err := eventUserID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// 日付と時刻のバリデーション
 	if _, err := time.Parse("2006-01-02", req.Date); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "日付の形式が不正です（YYYY-MM-DD）"})
+		return
+	}
+	if _, err := time.Parse("15:04", req.StartTime); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "開始時刻の形式が不正です（HH:MM）"})
+		return
+	}
+	if _, err := time.Parse("15:04", req.EndTime); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "終了時刻の形式が不正です（HH:MM）"})
 		return
 	}
 
