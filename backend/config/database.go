@@ -63,6 +63,44 @@ func ensureSchema() {
 			CONSTRAINT fk_companies_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 		`,
+		`
+		CREATE TABLE IF NOT EXISTS events (
+			id INT NOT NULL AUTO_INCREMENT,
+			user_id INT NOT NULL,
+			company_name VARCHAR(255) NOT NULL,
+			event_title VARCHAR(255) NOT NULL,
+			event_date DATE NOT NULL,
+			start_time TIME NOT NULL,
+			end_time TIME NOT NULL,
+			description TEXT,
+			created_from_mail_id VARCHAR(255),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			INDEX idx_user_date (user_id, event_date),
+			CONSTRAINT fk_events_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`,
+		`
+		CREATE TABLE IF NOT EXISTS company_roadmap_steps (
+			id INT NOT NULL AUTO_INCREMENT,
+			company_id INT NOT NULL,
+			user_id INT NOT NULL,
+			step_order INT NOT NULL,
+			title VARCHAR(255) NOT NULL,
+			status VARCHAR(50) NOT NULL DEFAULT 'pending',
+			target_date VARCHAR(50) DEFAULT '',
+			next_action TEXT,
+			notes TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			INDEX idx_roadmap_company_order (company_id, step_order),
+			INDEX idx_roadmap_user (user_id),
+			CONSTRAINT fk_roadmap_companies FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+			CONSTRAINT fk_roadmap_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`,
 	}
 
 	for _, query := range queries {

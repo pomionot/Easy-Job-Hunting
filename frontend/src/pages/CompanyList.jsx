@@ -20,6 +20,7 @@ const statusOptions = [
 
 export default function CompanyList() {
   const [companies, setCompanies] = useState([]);
+  const [roadmapsSummary, setRoadmapsSummary] = useState({});
   const [uid, setUid] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,11 +36,27 @@ export default function CompanyList() {
     if (savedUid) {
       setUid(savedUid);
       fetchCompanies(savedUid);
+      fetchRoadmapsSummary(savedUid);
     } else {
       setLoading(false);
       setError("ログインセッションが見つかりません。");
     }
   }, []);
+
+  const fetchRoadmapsSummary = (userUid) => {
+    fetch(`http://localhost:8080/api/roadmaps/summary?uid=${userUid}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        const map = {};
+        if (Array.isArray(data)) {
+          data.forEach((item) => {
+            map[item.company_id] = item;
+          });
+        }
+        setRoadmapsSummary(map);
+      })
+      .catch((err) => console.error("ロードマップサマリー取得失敗:", err));
+  };
 
   const fetchCompanies = (userUid) => {
     fetch(`http://localhost:8080/api/companies?uid=${userUid}`)
@@ -136,6 +153,16 @@ export default function CompanyList() {
             />
             企業情報登録
           </Link>
+          <Link
+            to="/roadmap"
+            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
+          >
+            <MaterialIcon
+              name="alt_route"
+              className="text-[20px] text-blue-200"
+            />
+            就活ロードマップ
+          </Link>
           <a
             href="#"
             className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-blue-500 text-white shadow-lg shadow-blue-950/20"
@@ -188,6 +215,7 @@ export default function CompanyList() {
                 <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 text-sm font-semibold">
                   <th className="p-4 pl-6">企業名</th>
                   <th className="p-4">業界 / 業種</th>
+                  <th className="p-4">就活ロードマップ（現在地・次に行うこと）</th>
                   <th className="p-4">AIアシスト</th>
                   <th className="p-4 pr-6">選考ステータス</th>
                 </tr>
@@ -218,6 +246,45 @@ export default function CompanyList() {
                       <span className="text-slate-400 text-xs">
                         {company.business_type}
                       </span>
+                    </td>
+
+                    {/* 🗺️ 就活ロードマップ（現在地・次に行うこと） */}
+                    <td className="p-4">
+                      {roadmapsSummary[company.id] && roadmapsSummary[company.id].total_steps > 0 ? (
+                        <div className="space-y-1.5 max-w-xs">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+                              <MaterialIcon name="my_location" className="text-[14px] text-blue-600" />
+                              {roadmapsSummary[company.id].current_step_title || "進行中"}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {roadmapsSummary[company.id].completed_count}/{roadmapsSummary[company.id].total_steps}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-1">
+                            <span className="font-semibold text-slate-700">次:</span>{" "}
+                            {roadmapsSummary[company.id].next_action}
+                          </p>
+                          <Link
+                            to={`/roadmap?companyId=${company.id}`}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            <MaterialIcon name="alt_route" className="text-[14px]" />
+                            ロードマップ確認・編集 ↗
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <span className="text-xs text-slate-400 block">未作成</span>
+                          <Link
+                            to={`/roadmap?companyId=${company.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition"
+                          >
+                            <MaterialIcon name="add" className="text-[15px]" />
+                            ロードマップ作成
+                          </Link>
+                        </div>
+                      )}
                     </td>
 
                     {/* ✨ AIボタン設置 */}

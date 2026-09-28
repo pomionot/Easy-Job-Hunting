@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import MaterialIcon from "../components/MaterialIcon"; // ご用意されているアイコンコンポーネント
 
 export default function Profile() {
@@ -78,6 +79,33 @@ export default function Profile() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {/* 導線リンク */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <Link
+          to="/dashboard"
+          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+        >
+          <MaterialIcon name="arrow_back" className="text-[18px]" />
+          ダッシュボードへ戻る
+        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/roadmap"
+            className="text-slate-600 hover:text-blue-600 font-medium flex items-center gap-1"
+          >
+            <MaterialIcon name="alt_route" className="text-[18px]" />
+            就活ロードマップ
+          </Link>
+          <Link
+            to="/company-list"
+            className="text-slate-600 hover:text-blue-600 font-medium flex items-center gap-1"
+          >
+            <MaterialIcon name="dashboard" className="text-[18px]" />
+            企業リスト
+          </Link>
+        </div>
+      </div>
+
       {/* 👑 ヘッダー（アイコンを統合して整頓） */}
       <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
         <div className="p-2.5 bg-blue-50 text-blue-600 rounded-2xl">

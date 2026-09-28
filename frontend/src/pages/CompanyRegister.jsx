@@ -85,6 +85,13 @@ export default function CompanyRegister() {
             <MaterialIcon name="dashboard" className="text-[18px]" />
             企業リストを見る
           </Link>
+          <Link
+            to="/roadmap"
+            className="text-sm text-slate-600 hover:text-blue-600 font-medium flex items-center gap-1"
+          >
+            <MaterialIcon name="alt_route" className="text-[18px]" />
+            就活ロードマップ
+          </Link>
         </div>
         <div className="flex items-center gap-3 border-b border-slate-200/70 pb-4 mb-6">
           <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center">

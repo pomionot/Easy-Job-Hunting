@@ -128,6 +128,16 @@ func main() {
 	r.PUT("/api/companies/status", handlers.UpdateCompanyStatusHandler)
 	r.POST("/api/ai/analyze", handlers.AnalyzeCompanyHandler)
 
+	// 企業ロードマップ関連API
+	r.GET("/api/companies/:id/roadmap", handlers.GetCompanyRoadmapHandler)
+	r.POST("/api/companies/:id/roadmap/init", handlers.InitCompanyRoadmapHandler)
+	r.POST("/api/companies/:id/roadmap/steps", handlers.AddRoadmapStepHandler)
+	r.PUT("/api/companies/:id/roadmap/steps/:step_id", handlers.UpdateRoadmapStepHandler)
+	r.DELETE("/api/companies/:id/roadmap/steps/:step_id", handlers.DeleteRoadmapStepHandler)
+	r.PUT("/api/companies/:id/roadmap/current", handlers.SetCurrentRoadmapStepHandler)
+	r.GET("/api/roadmaps/summary", handlers.GetRoadmapSummaryHandler)
+	r.POST("/api/companies/:id/roadmap/advice", handlers.GetRoadmapAdviceHandler)
+
 	fmt.Println("サーバーがポート 8080 で起動しました。 http://localhost:8080/login")
 	log.Fatal(r.Run(":8080"))
 }

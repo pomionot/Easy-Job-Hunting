@@ -5,6 +5,7 @@ import MailFilterSettings from "./pages/MailFilterSettings";
 import Profile from "./pages/Profile";
 import CompanyRegister from "./pages/CompanyRegister";
 import CompanyList from "./pages/CompanyList";
+import CompanyRoadmap from "./pages/CompanyRoadmap";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import MaterialIcon from "./components/MaterialIcon";
 
@@ -163,6 +164,7 @@ export default function App() {
         <Route path="/mails" element={<MailList />} />
         <Route path="/mail-filters" element={<MailFilterSettings />} />
         <Route path="/company-list" element={<CompanyList />} />
+        <Route path="/roadmap" element={<CompanyRoadmap />} />
       </Routes>
     </BrowserRouter>
   );

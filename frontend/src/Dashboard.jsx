@@ -13,6 +13,7 @@ const navItems = [
     icon: "space_dashboard",
     active: true,
   },
+  { to: "/roadmap", label: "就活ロードマップ", icon: "alt_route" },
   { to: "/company-register", label: "企業情報登録", icon: "domain_add" },
   { to: "/company-list", label: "企業管理リスト", icon: "stacks" },
   { to: "/mail-filters", label: "メールフィルター設定", icon: "filter_alt" },
@@ -22,8 +23,10 @@ const navItems = [
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [mails, setMails] = useState([]);
+  const [roadmaps, setRoadmaps] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(true);
   const [loadingMails, setLoadingMails] = useState(true);
+  const [loadingRoadmaps, setLoadingRoadmaps] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [errorMail, setErrorMail] = useState("");
   const [calendarVersion, setCalendarVersion] = useState(0);
@@ -115,6 +118,28 @@ export default function Dashboard() {
         setLoadingMails(false);
       });
   }, []); // 👈 メール専用のuseEffectとして独立させる！
+
+  // 🔄 3. 選考中企業の就活ロードマップサマリーを取得
+  useEffect(() => {
+    const userUid = localStorage.getItem("login_user_uid") || "";
+    const userEmail = localStorage.getItem("login_user_email") || "";
+    const userQuery = userUid
+      ? `?uid=${encodeURIComponent(userUid)}`
+      : userEmail
+        ? `?email=${encodeURIComponent(userEmail)}`
+        : "";
+
+    fetch(`http://localhost:8080/api/roadmaps/summary${userQuery}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        setRoadmaps(Array.isArray(data) ? data : []);
+        setLoadingRoadmaps(false);
+      })
+      .catch((err) => {
+        console.error("ロードマップ取得エラー:", err);
+        setLoadingRoadmaps(false);
+      });
+  }, []);
 
   const handleEventClick = (info) => {
     setSelectedEvent(info.event.extendedProps);
@@ -288,6 +313,121 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* 🗺️ 選考ロードマップ状況（現在地と次に行うべきこと） */}
+        <div className="mb-8 mt-8 text-left">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <MaterialIcon name="alt_route" className="text-[22px] text-blue-600" />
+              選考ロードマップ状況（現在地と次のToDo）
+            </h2>
+            <Link
+              to="/roadmap"
+              className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              全ロードマップを管理 ↗
+            </Link>
+          </div>
+
+          {loadingRoadmaps ? (
+            <div className="section-card p-6 text-center text-slate-500 text-sm">
+              ロードマップ状況を読み込み中...
+            </div>
+          ) : roadmaps.length === 0 ? (
+            <div className="section-card p-6 text-center bg-white/70">
+              <p className="text-sm text-slate-600 mb-3">
+                登録企業ごとの選考ロードマップを作成すると、現在地と次のアクションがここに整理されます。
+              </p>
+              <Link
+                to="/company-register"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition"
+              >
+                <MaterialIcon name="add" className="text-[16px]" />
+                企業を登録してロードマップを作成
+              </Link>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {roadmaps.map((item) => (
+                <div
+                  key={item.company_id}
+                  className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <h4 className="font-bold text-slate-900 text-sm truncate" title={item.company_name}>
+                        {item.company_name}
+                      </h4>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium shrink-0">
+                        {item.company_status || "選考中"}
+                      </span>
+                    </div>
+
+                    {item.total_steps > 0 ? (
+                      <div className="space-y-2">
+                        {/* 現在地バッジ */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                            📍 現在地: {item.current_step_title}
+                          </span>
+                        </div>
+
+                        {/* 次に行うべきこと */}
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+                            <MaterialIcon name="bolt" className="text-[14px] text-amber-500" />
+                            次に行うこと
+                          </div>
+                          <p className="text-xs text-slate-700 leading-snug font-medium line-clamp-2">
+                            {item.next_action}
+                          </p>
+                        </div>
+
+                        {/* プログレス */}
+                        <div className="pt-1">
+                          <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                            <span>進捗</span>
+                            <span>{item.completed_count}/{item.total_steps} 完了 ({item.progress_rate}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="bg-blue-600 h-1.5 rounded-full transition-all"
+                              style={{ width: `${item.progress_rate}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-3 text-center">
+                        <span className="text-xs text-slate-400 block mb-2">ロードマップ未作成</span>
+                        <Link
+                          to={`/roadmap?companyId=${item.company_id}`}
+                          className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition"
+                        >
+                          <MaterialIcon name="add" className="text-[15px]" />
+                          ロードマップ作成
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  {item.total_steps > 0 && (
+                    <div className="mt-3 pt-2 border-t border-slate-100 flex justify-end">
+                      <Link
+                        to={`/roadmap?companyId=${item.company_id}`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        詳細・進める
+                        <MaterialIcon name="chevron_right" className="text-[16px]" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mb-8 mt-8">
