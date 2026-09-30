@@ -20,6 +20,7 @@ const iconMap = {
   domain_disabled: "fa-solid fa-building-slash",
   done_all: "fa-solid fa-check-double",
   edit: "fa-solid fa-pen-to-square",
+  edit_note: "fa-solid fa-pen-to-square",
   error: "fa-solid fa-circle-exclamation",
   event: "fa-regular fa-calendar-check",
   event_note: "fa-regular fa-calendar",
@@ -43,6 +44,7 @@ const iconMap = {
   schedule: "fa-regular fa-clock",
   search: "fa-solid fa-magnifying-glass",
   smart_toy: "fa-solid fa-robot",
+  task_alt: "fa-solid fa-square-check",
   school: "fa-solid fa-graduation-cap",
   space_dashboard: "fa-solid fa-table-columns",
   stacks: "fa-solid fa-layer-group",
@@ -52,6 +54,7 @@ const iconMap = {
   verified: "fa-solid fa-circle-check",
   visibility: "fa-solid fa-eye",
   warning: "fa-solid fa-triangle-exclamation",
+  work_outline: "fa-solid fa-briefcase",
 };
 
 export default function MaterialIcon({

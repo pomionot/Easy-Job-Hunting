@@ -283,111 +283,57 @@ export default function CompanyRoadmap() {
   const currentComp = companies.find((c) => String(c.id) === String(selectedCompanyId));
 
   return (
-    <div className="min-h-screen bg-transparent flex app-shell">
-      {/* サイドバー */}
-      <aside className="hidden md:flex w-72 flex-col gap-6 p-6 border-r border-slate-200/80 bg-slate-950/95 text-white">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-11 w-11 rounded-2xl bg-blue-500/15 flex items-center justify-center">
-              <MaterialIcon name="map" className="text-[24px] text-blue-200" />
-            </div>
-            <div>
-              <div className="text-lg font-bold tracking-tight">Easy Job Hunting</div>
-              <div className="text-xs text-slate-300">就活ロードマップ</div>
-            </div>
-          </div>
+    <div className="bg-gray-50 text-gray-800 flex min-h-screen overflow-hidden">
+      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <Link to="/dashboard" className="text-xl font-bold text-orange-600 flex items-center gap-2">
+            <i className="fa-solid fa-seedling" aria-hidden="true" />
+            Easy Job Hunting
+          </Link>
         </div>
-        <nav className="space-y-2">
-          <Link
-            to="/dashboard"
-            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
-          >
-            <MaterialIcon name="space_dashboard" className="text-[20px] text-blue-200" />
-            メインダッシュボード
-          </Link>
-          <a
-            href="#"
-            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-blue-500 text-white shadow-lg shadow-blue-950/20"
-          >
-            <MaterialIcon name="alt_route" className="text-[20px] text-white" />
-            就活ロードマップ
-          </a>
-          <Link
-            to="/company-list"
-            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
-          >
-            <MaterialIcon name="stacks" className="text-[20px] text-blue-200" />
-            企業管理リスト
-          </Link>
-          <Link
-            to="/company-register"
-            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
-          >
-            <MaterialIcon name="domain_add" className="text-[20px] text-blue-200" />
-            企業情報登録
-          </Link>
-          <Link
-            to="/profile"
-            className="app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-white/5 text-slate-200 hover:bg-white/10"
-          >
-            <MaterialIcon name="person" className="text-[20px] text-blue-200" />
-            プロフィール登録
-          </Link>
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {[
+            ["/dashboard", "fa-solid fa-house", "ホーム"],
+            ["/mails", "fa-regular fa-envelope", "メール一覧"],
+            ["/company-list", "fa-regular fa-building", "企業管理リスト"],
+            ["/roadmap", "fa-solid fa-map-location-dot", "就活ロードマップ"],
+            ["/profile", "fa-regular fa-id-card", "プロフィール設定"],
+            ["/mail-filters", "fa-solid fa-sliders", "メールフィルター"],
+          ].map(([to, icon, label]) => (
+            <Link key={to} to={to} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${to === "/roadmap" ? "bg-orange-50 text-orange-600" : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"}`}>
+              <i className={`${icon} w-5`} aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
         </nav>
       </aside>
 
-      {/* メインエリア */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-        {/* ヘッダー */}
-        <header className="section-card glass-panel px-5 py-4 sm:px-6 sm:py-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-left">
-          <div>
-            <div className="chip mb-2 w-fit">
-              <MaterialIcon name="alt_route" className="text-[18px]" />
-              選考進捗の可視化
+      <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 relative z-10 gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-500 flex items-center justify-center shrink-0">
+              <i className="fa-solid fa-map-location-dot" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1 flex items-center gap-2">
-              <MaterialIcon name="flag" className="text-[28px] text-blue-600" />
-              企業別 就活ロードマップ
-            </h1>
-            <p className="text-sm text-slate-600">
-              各企業での「現在地」と「次に行うべきこと」を整理し、内定までの最短ルートを掴みます。
-            </p>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">企業別 就活ロードマップ</h1>
+              <p className="text-[10px] text-gray-500 hidden sm:block truncate">現在地と次に行うべきことを整理し、内定までのルートを描きます。</p>
+            </div>
           </div>
-
-          {/* 企業選択セレクター */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 bg-white/80 border border-slate-200 rounded-2xl px-4 py-2 shadow-sm">
-              <MaterialIcon name="business" className="text-[20px] text-slate-500" />
-              <label htmlFor="company-select" className="text-xs font-semibold text-slate-500">
-                企業:
-              </label>
-              <select
-                id="company-select"
-                value={selectedCompanyId}
-                onChange={handleCompanyChange}
-                className="bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer"
-              >
-                {companies.length === 0 ? (
-                  <option value="">企業が未登録です</option>
-                ) : (
-                  companies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.company_name} ({c.status || "未設定"})
-                    </option>
-                  ))
-                )}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+              <i className="fa-regular fa-building text-gray-400 text-sm" aria-hidden="true" />
+              <select id="company-select" value={selectedCompanyId} onChange={handleCompanyChange} className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer max-w-[180px] sm:max-w-none">
+                {companies.length === 0 ? <option value="">企業が未登録です</option> : companies.map((c) => <option key={c.id} value={c.id}>{c.company_name} ({c.status || "未設定"})</option>)}
               </select>
             </div>
-
-            <Link
-              to="/company-register"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition"
-            >
-              <MaterialIcon name="add" className="text-[18px]" />
-              企業を追加
+            <Link to="/company-register" className="hidden sm:inline-flex text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors items-center gap-1">
+              <i className="fa-solid fa-plus" aria-hidden="true" /> 企業を追加
             </Link>
           </div>
         </header>
+
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-4xl mx-auto space-y-8">
 
         {/* 通知バー */}
         {successMessage && (
@@ -405,12 +351,12 @@ export default function CompanyRoadmap() {
 
         {/* ロード画面 */}
         {loading || roadmapLoading ? (
-          <div className="section-card p-16 text-center text-slate-500">
-            <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-3"></div>
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-16 text-center text-gray-500">
+            <div className="animate-spin inline-block w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mb-3"></div>
             <div>ロードマップを読み込み中...</div>
           </div>
         ) : companies.length === 0 ? (
-          <div className="section-card p-12 text-center text-slate-600 bg-white/70">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 text-center text-gray-600">
             <MaterialIcon name="domain_disabled" className="text-[48px] text-slate-300 mb-3" />
             <h3 className="text-lg font-bold text-slate-800 mb-2">登録されている企業がありません</h3>
             <p className="text-sm text-slate-500 mb-6">
@@ -418,7 +364,7 @@ export default function CompanyRoadmap() {
             </p>
             <Link
               to="/company-register"
-              className="app-button app-button-primary inline-flex items-center gap-2 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow-md"
+              className="bg-orange-500 hover:bg-orange-600 inline-flex items-center gap-2 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md"
             >
               <MaterialIcon name="add" className="text-[20px]" />
               企業情報を登録する
@@ -426,8 +372,8 @@ export default function CompanyRoadmap() {
           </div>
         ) : !roadmap || roadmap.total_steps === 0 ? (
           /* ロードマップ未作成時の案内カード */
-          <div className="section-card p-8 sm:p-10 text-center bg-gradient-to-br from-white/90 to-blue-50/50 border border-blue-100 shadow-md">
-            <div className="inline-flex p-4 rounded-3xl bg-blue-100/70 text-blue-600 mb-4">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 sm:p-10 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-orange-100 text-orange-600 mb-4">
               <MaterialIcon name="add_road" className="text-[36px]" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">
@@ -441,9 +387,9 @@ export default function CompanyRoadmap() {
               <button
                 onClick={() => handleInitRoadmap("template")}
                 disabled={actionLoading}
-                className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-blue-200 bg-white hover:bg-blue-50/80 hover:border-blue-400 transition shadow-sm group text-center"
+                className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-orange-200 bg-white hover:bg-orange-50 hover:border-orange-400 transition shadow-sm group text-center"
               >
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3 group-hover:scale-110 transition">
                   <MaterialIcon name="format_list_bulleted" className="text-[26px]" />
                 </div>
                 <div className="font-bold text-slate-900 mb-1">標準テンプレートで作成</div>
@@ -471,27 +417,27 @@ export default function CompanyRoadmap() {
           /* ロードマップ作成済み表示 */
           <div className="space-y-6">
             {/* 🌟 1. 現在地と次に行うべきことのハイライトカード */}
-            <div className="rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 text-white p-1 shadow-lg relative overflow-hidden">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 sm:p-8 h-full relative overflow-hidden">
 
               <div className="relative z-10">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/30 bg-blue-500/20 px-3.5 py-1 text-xs font-semibold text-blue-200">
-                    <MaterialIcon name="navigation" className="text-[16px] text-blue-300" />
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white">
+                    <MaterialIcon name="navigation" className="text-[16px] text-white" />
                     現在の選考フェーズ・現在地
                   </div>
                   <div className="text-xs text-slate-300 flex items-center gap-2 font-medium">
                     <span>進捗状況:</span>
-                    <span className="text-emerald-400 font-bold text-sm">
+                      <span className="text-white font-bold text-sm">
                       {roadmap.completed_count} / {roadmap.total_steps} 完了 ({roadmap.progress_rate}%)
                     </span>
                   </div>
                 </div>
 
                 {/* プログレスバー */}
-                <div className="w-full bg-white/10 rounded-full h-2.5 mb-6 overflow-hidden">
+                <div className="w-full bg-black/20 rounded-full h-2.5 mb-6 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-blue-400 to-emerald-400 h-2.5 rounded-full transition-all duration-500"
+                    className="bg-white h-2.5 rounded-full transition-all duration-500"
                     style={{ width: `${roadmap.progress_rate}%` }}
                   />
                 </div>
@@ -501,7 +447,7 @@ export default function CompanyRoadmap() {
                     {roadmap.current_step ? (
                       <>
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="px-3 py-1 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs font-extrabold flex items-center gap-1">
+                            <span className="px-3 py-1 rounded-xl bg-white/20 text-white border border-white/20 text-xs font-extrabold flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block mr-1"></span>
                             📍 現在地
                           </span>
@@ -516,8 +462,8 @@ export default function CompanyRoadmap() {
                         </div>
 
                         {/* 次に行うべきことの強調表示 */}
-                        <div className="mt-4 p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
-                          <div className="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <div className="mt-4 p-5 rounded-xl bg-black/20 backdrop-blur-md border border-white/15">
+                          <div className="text-xs font-bold text-orange-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <MaterialIcon name="bolt" className="text-[18px] text-amber-300" />
                             次に行うべきこと（Next Action）
                           </div>
@@ -552,7 +498,7 @@ export default function CompanyRoadmap() {
                       <button
                         onClick={handleCompleteAndNext}
                         disabled={actionLoading}
-                        className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-3 rounded-2xl text-sm transition shadow-lg shadow-emerald-950/20 active:scale-95"
+                        className="inline-flex items-center justify-center gap-2 bg-white hover:bg-orange-50 text-orange-600 font-bold px-5 py-3 rounded-xl text-sm transition shadow-sm active:scale-95"
                       >
                         <MaterialIcon name="done_all" className="text-[20px]" />
                         このステップを完了して次へ
@@ -562,7 +508,7 @@ export default function CompanyRoadmap() {
                     <button
                       onClick={handleGetAdvice}
                       disabled={!roadmap.current_step || actionLoading}
-                      className="inline-flex items-center justify-center gap-2 bg-indigo-500/80 hover:bg-indigo-500 text-white font-semibold px-4 py-3 rounded-2xl text-sm border border-indigo-400/40 transition active:scale-95"
+                      className="inline-flex items-center justify-center gap-2 bg-orange-700/50 hover:bg-orange-700/70 text-white font-semibold px-4 py-3 rounded-xl text-sm border border-orange-300/30 transition active:scale-95"
                     >
                       <MaterialIcon name="psychology" className="text-[20px] text-indigo-200" />
                       AI対策アドバイス
@@ -581,13 +527,14 @@ export default function CompanyRoadmap() {
                 </div>
               </div>
             </div>
+            </div>
 
             {/* 🗺️ 2. ロードマップ全体タイムライン */}
-            <div className="section-card p-6 sm:p-8 bg-white/80">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <MaterialIcon name="timeline" className="text-[22px] text-blue-600" />
+                    <MaterialIcon name="timeline" className="text-[22px] text-orange-500" />
                     選考ステップ一覧（タイムライン）
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -620,7 +567,7 @@ export default function CompanyRoadmap() {
               </div>
 
               {/* タイムラインリスト */}
-              <div className="relative pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-6">
+              <div className="relative pl-6 sm:pl-8 border-l-2 border-gray-100 space-y-6">
                 {roadmap.steps.map((step, index) => {
                   const isCurrent = roadmap.current_step?.id === step.id;
                   const isCompleted = step.status === "completed";
@@ -631,7 +578,7 @@ export default function CompanyRoadmap() {
                       key={step.id}
                       className={`relative group p-5 rounded-2xl border transition-all ${
                         isCurrent
-                          ? "bg-blue-50/60 border-blue-300 shadow-md ring-2 ring-blue-400/20"
+                          ? "bg-orange-50 border-orange-300 shadow-md ring-2 ring-orange-400/20"
                           : isCompleted
                             ? "bg-slate-50/80 border-slate-200 opacity-90"
                             : "bg-white border-slate-200 hover:border-slate-300"
@@ -770,6 +717,9 @@ export default function CompanyRoadmap() {
             </div>
           </div>
         )}
+
+          </div>
+        </div>
 
         {/* ✏️ ステップ追加・編集モーダル */}
         {stepModalOpen && (
