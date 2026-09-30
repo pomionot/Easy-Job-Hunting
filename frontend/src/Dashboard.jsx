@@ -4,15 +4,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Link } from "react-router-dom";
-
-const navItems = [
-  { to: "/dashboard", label: "ホーム", icon: "fa-solid fa-house", active: true },
-  { to: "/mails", label: "メール一覧", icon: "fa-regular fa-envelope" },
-  { to: "/company-list", label: "企業管理リスト", icon: "fa-regular fa-building" },
-  { to: "/roadmap", label: "就活ロードマップ", icon: "fa-solid fa-map-location-dot" },
-  { to: "/profile", label: "プロフィール設定", icon: "fa-regular fa-id-card" },
-  { to: "/mail-filters", label: "メールフィルター", icon: "fa-solid fa-sliders" },
-];
+import AppSidebar from "./components/AppSidebar";
 
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -200,41 +192,7 @@ export default function Dashboard() {
 
   return (
     <div className="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden">
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-gray-100">
-          <div className="text-xl font-bold text-orange-600 flex items-center gap-2">
-            <i className="fa-solid fa-seedling"></i>
-            Easy Job Hunting
-          </div>
-        </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
-                item.active
-                  ? "bg-orange-50 text-orange-600"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"
-              }`}
-            >
-              <i className={`${item.icon} w-5`}></i>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-gray-100">
-          <button
-            type="button"
-            className="flex items-center gap-3 px-4 py-2 w-full text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <i className="fa-solid fa-arrow-right-from-bracket w-5"></i>
-            ログアウト
-          </button>
-        </div>
-      </aside>
+      <AppSidebar activePath="/dashboard" />
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
