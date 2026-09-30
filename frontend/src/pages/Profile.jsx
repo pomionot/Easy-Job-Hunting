@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import MaterialIcon from "../components/MaterialIcon"; // ご用意されているアイコンコンポーネント
 
 export default function Profile() {
   const [uid, setUid] = useState("");
@@ -78,159 +77,120 @@ export default function Profile() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      {/* 導線リンク */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <Link
-          to="/dashboard"
-          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-        >
-          <MaterialIcon name="arrow_back" className="text-[18px]" />
-          ダッシュボードへ戻る
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/roadmap"
-            className="text-slate-600 hover:text-blue-600 font-medium flex items-center gap-1"
-          >
-            <MaterialIcon name="alt_route" className="text-[18px]" />
-            就活ロードマップ
-          </Link>
-          <Link
-            to="/company-list"
-            className="text-slate-600 hover:text-blue-600 font-medium flex items-center gap-1"
-          >
-            <MaterialIcon name="dashboard" className="text-[18px]" />
-            企業リスト
+    <div className="bg-gray-50 text-gray-800 flex min-h-screen overflow-hidden">
+      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <Link to="/dashboard" className="text-xl font-bold text-orange-600 flex items-center gap-2">
+            <i className="fa-solid fa-seedling" aria-hidden="true" />
+            Easy Job Hunting
           </Link>
         </div>
-      </div>
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {[
+            ["/dashboard", "fa-solid fa-house", "ホーム"],
+            ["/mails", "fa-regular fa-envelope", "メール一覧"],
+            ["/company-list", "fa-regular fa-building", "企業管理リスト"],
+            ["/roadmap", "fa-solid fa-map-location-dot", "就活ロードマップ"],
+            ["/profile", "fa-regular fa-id-card", "プロフィール設定"],
+            ["/mail-filters", "fa-solid fa-sliders", "メールフィルター"],
+          ].map(([to, icon, label]) => (
+            <Link key={to} to={to} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${to === "/profile" ? "bg-orange-50 text-orange-600" : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"}`}>
+              <i className={`${icon} w-5`} aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </aside>
 
-      {/* 👑 ヘッダー（アイコンを統合して整頓） */}
-      <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
-        <div className="p-2.5 bg-blue-50 text-blue-600 rounded-2xl">
-          <MaterialIcon name="person" className="w-6 h-6" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">
-            就活プロフィール設定
-          </h2>
-          <p className="text-xs text-slate-500">
-            {email || "ログイン中のアカウント"}
-          </p>
-        </div>
-      </div>
+      <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 sm:px-8 shrink-0">
+          <h1 className="text-xl font-semibold text-gray-800">プロフィール設定</h1>
+        </header>
 
-      {/* 🔔 通知メッセージ */}
-      {message && (
-        <div
-          className={`p-4 rounded-2xl mb-6 text-sm font-medium ${
-            message.type === "success"
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-rose-50 text-rose-700"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-sm">
+              <Link to="/dashboard" className="text-orange-600 hover:text-orange-700 font-medium flex items-center gap-2 transition-colors">
+                <i className="fa-solid fa-arrow-left" aria-hidden="true" />
+                ダッシュボードへ戻る
+              </Link>
+              <div className="flex gap-4 sm:gap-6">
+                <Link to="/roadmap" className="text-gray-600 hover:text-orange-500 font-medium flex items-center gap-2 transition-colors">
+                  <i className="fa-solid fa-map-location-dot" aria-hidden="true" />
+                  就活ロードマップ
+                </Link>
+                <Link to="/company-list" className="text-gray-600 hover:text-orange-500 font-medium flex items-center gap-2 transition-colors">
+                  <i className="fa-regular fa-building" aria-hidden="true" />
+                  企業リスト
+                </Link>
+              </div>
+            </div>
 
-      {/* 📝 入力フォーム */}
-      <form onSubmit={handleSubmit} className="grid gap-5">
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center">
-            <span className="mr-1.5 text-slate-400">
-              <MaterialIcon name="badge" />
-            </span>
-            氏名
-          </label>
-          <input
-            type="text"
-            className="block w-full rounded-2xl border border-slate-200 bg-white/80 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 p-3 outline-none transition-all"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="就活 太郎"
-            required
-          />
-        </div>
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm">
+              <div className="flex items-start gap-4 mb-8 border-b border-gray-100 pb-6">
+                <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-500 flex items-center justify-center text-2xl shrink-0">
+                  <i className="fa-regular fa-user" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">就活プロフィール設定</h2>
+                  <p className="text-gray-500 text-sm mt-1">{email || "ログイン中のアカウント"}</p>
+                </div>
+              </div>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center">
-              <span className="mr-1.5 text-slate-400">
-                <MaterialIcon name="school" />
-              </span>
-              大学名
-            </label>
-            <input
-              type="text"
-              className="block w-full rounded-2xl border border-slate-200 bg-white/80 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 p-3 outline-none transition-all"
-              value={university}
-              onChange={(e) => setUniversity(e.target.value)}
-              placeholder="〇〇大学"
-            />
+              {message && (
+                <div className={`p-4 rounded-xl mb-6 text-sm font-medium ${message.type === "success" ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-rose-50 border border-rose-200 text-rose-800"}`} role="status">
+                  {message.text}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <i className="fa-regular fa-id-badge text-gray-400" aria-hidden="true" /> 氏名
+                  </label>
+                  <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="就活 太郎" required className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 block p-3.5 outline-none transition-colors" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="university" className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      <i className="fa-solid fa-graduation-cap text-gray-400" aria-hidden="true" /> 大学名
+                    </label>
+                    <input id="university" type="text" value={university} onChange={(e) => setUniversity(e.target.value)} placeholder="〇〇大学" className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 block p-3.5 outline-none transition-colors" />
+                  </div>
+                  <div>
+                    <label htmlFor="faculty" className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      <i className="fa-solid fa-book-open text-gray-400" aria-hidden="true" /> 学部・学科
+                    </label>
+                    <input id="faculty" type="text" value={faculty} onChange={(e) => setFaculty(e.target.value)} placeholder="理工学部 情報工学科" className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 block p-3.5 outline-none transition-colors" />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="target_industry" className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <i className="fa-solid fa-arrow-trend-up text-gray-400" aria-hidden="true" /> 志望業界
+                  </label>
+                  <input id="target_industry" type="text" value={targetIndustry} onChange={(e) => setTargetIndustry(e.target.value)} placeholder="IT・ソフトウェア・通信" className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 block p-3.5 outline-none transition-colors" />
+                </div>
+
+                <div>
+                  <label htmlFor="self_pr" className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <i className="fa-solid fa-wand-magic-sparkles text-orange-500" aria-hidden="true" /> 自己PR <span className="text-xs font-normal text-gray-500">（AI生成にも使用されます）</span>
+                  </label>
+                  <textarea id="self_pr" rows="6" value={selfPr} onChange={(e) => setSelfPr(e.target.value)} placeholder="あなたの強みや、学生時代に注力した開発、研究内容（Go、PHP、JavaScript、機械学習など）について詳しく記入してください。" className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 block p-3.5 outline-none transition-colors resize-y" />
+                </div>
+
+                <div className="pt-2">
+                  <button type="submit" disabled={loading || !uid} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i className="fa-regular fa-floppy-disk" aria-hidden="true" />
+                    {loading ? "登録中..." : "プロフィールを保存する"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center">
-              <span className="mr-1.5 text-slate-400">
-                <MaterialIcon name="history_edu" />
-              </span>
-              学部・学科
-            </label>
-            <input
-              type="text"
-              className="block w-full rounded-2xl border border-slate-200 bg-white/80 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 p-3 outline-none transition-all"
-              value={faculty}
-              onChange={(e) => setFaculty(e.target.value)}
-              placeholder="理工学部 情報工学科"
-            />
-          </div>
         </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center">
-            <span className="mr-1.5 text-slate-400">
-              <MaterialIcon name="trending_up" />
-            </span>
-            志望業界
-          </label>
-          <input
-            type="text"
-            className="block w-full rounded-2xl border border-slate-200 bg-white/80 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 p-3 outline-none transition-all"
-            value={targetIndustry}
-            onChange={(e) => setTargetIndustry(e.target.value)}
-            placeholder="IT・ソフトウェア・通信"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center">
-            <span className="mr-1.5 text-slate-400">
-              <MaterialIcon name="psychology" />
-            </span>
-            自己PR（AI生成にも使用されます）
-          </label>
-          <textarea
-            className="block w-full rounded-2xl border border-slate-200 bg-white/80 shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 p-3 min-h-[160px] outline-none transition-all resize-none"
-            value={selfPr}
-            onChange={(e) => setSelfPr(e.target.value)}
-            placeholder="あなたの強みや、学生時代に注力した開発、研究内容（Go、PHP、JavaScript、機械学習など）について詳しく記入してください。"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading || !uid}
-          className={`w-full py-3.5 rounded-2xl font-semibold text-white shadow-md flex items-center justify-center space-x-2 transition-all ${
-            loading || !uid
-              ? "bg-slate-300 cursor-not-allowed shadow-none"
-              : "bg-blue-600 hover:bg-blue-700 active:scale-[0.99]"
-          }`}
-        >
-          <MaterialIcon name="save" className="w-5 h-5" />
-          <span>{loading ? "登録中..." : "プロフィールを保存する"}</span>
-        </button>
-      </form>
+      </main>
     </div>
   );
 }
