@@ -4,20 +4,14 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Link } from "react-router-dom";
-import MaterialIcon from "./components/MaterialIcon";
 
 const navItems = [
-  {
-    to: "/dashboard",
-    label: "メインダッシュボード",
-    icon: "space_dashboard",
-    active: true,
-  },
-  { to: "/roadmap", label: "就活ロードマップ", icon: "alt_route" },
-  { to: "/company-register", label: "企業情報登録", icon: "domain_add" },
-  { to: "/company-list", label: "企業管理リスト", icon: "stacks" },
-  { to: "/mail-filters", label: "メールフィルター設定", icon: "filter_alt" },
-  { to: "/profile", label: "プロフィール登録", icon: "person" },
+  { to: "/dashboard", label: "ホーム", icon: "fa-solid fa-house", active: true },
+  { to: "/mails", label: "メール一覧", icon: "fa-regular fa-envelope" },
+  { to: "/company-list", label: "企業管理リスト", icon: "fa-regular fa-building" },
+  { to: "/roadmap", label: "就活ロードマップ", icon: "fa-solid fa-map-location-dot" },
+  { to: "/profile", label: "プロフィール設定", icon: "fa-regular fa-id-card" },
+  { to: "/mail-filters", label: "メールフィルター", icon: "fa-solid fa-sliders" },
 ];
 
 export default function Dashboard() {
@@ -41,7 +35,6 @@ export default function Dashboard() {
     description: "",
   });
 
-  // 🔄 1. 選考予定（カレンダー）を取得
   useEffect(() => {
     const userUid = localStorage.getItem("login_user_uid") || "";
     const userEmail = localStorage.getItem("login_user_email") || "";
@@ -84,7 +77,6 @@ export default function Dashboard() {
       });
   }, [calendarVersion]);
 
-  // 🔄 2. 就活メール（最新5件）を取得
   useEffect(() => {
     const userUid = localStorage.getItem("login_user_uid") || "";
     const userEmail = localStorage.getItem("login_user_email") || "";
@@ -108,7 +100,6 @@ export default function Dashboard() {
         if (!Array.isArray(data)) {
           throw new Error(data?.error || "メールデータの形式が不正です");
         }
-        // ダッシュボード用なので、最新の5件だけを切り出して表示する
         setMails(data.slice(0, 5));
         setLoadingMails(false);
       })
@@ -117,9 +108,8 @@ export default function Dashboard() {
         setErrorMail(err.message || "メールの取得中にエラーが発生しました");
         setLoadingMails(false);
       });
-  }, []); // 👈 メール専用のuseEffectとして独立させる！
+  }, []);
 
-  // 🔄 3. 選考中企業の就活ロードマップサマリーを取得
   useEffect(() => {
     const userUid = localStorage.getItem("login_user_uid") || "";
     const userEmail = localStorage.getItem("login_user_email") || "";
@@ -146,7 +136,15 @@ export default function Dashboard() {
   };
 
   const openNewEventForm = (date = "") => {
-    setEventForm({ id: null, company: "", title: "", date: date.slice(0, 10), start_time: "", end_time: "", description: "" });
+    setEventForm({
+      id: null,
+      company: "",
+      title: "",
+      date: date.slice(0, 10),
+      start_time: "",
+      end_time: "",
+      description: "",
+    });
     setEventFormOpen(true);
   };
 
@@ -187,7 +185,10 @@ export default function Dashboard() {
   const deleteSelectedEvent = async () => {
     if (!window.confirm("この予定を削除しますか？")) return;
     try {
-      const response = await fetch(`http://localhost:8080/api/events/${selectedEvent.id}${getEventQuery()}`, { method: "DELETE" });
+      const response = await fetch(
+        `http://localhost:8080/api/events/${selectedEvent.id}${getEventQuery()}`,
+        { method: "DELETE" },
+      );
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "イベントの削除に失敗しました");
       setSelectedEvent(null);
@@ -198,432 +199,336 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent flex app-shell">
-      <aside className="hidden md:flex w-72 flex-col gap-6 p-6 border-r border-slate-200/80 bg-slate-950/95 text-white">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-11 w-11 rounded-2xl bg-blue-500/15 flex items-center justify-center">
-              <MaterialIcon
-                name="work_outline"
-                className="text-[24px] text-blue-200"
-              />
-            </div>
-            <div>
-              <div className="text-lg font-bold tracking-tight">
-                Easy Job Hunting
-              </div>
-              <div className="text-xs text-slate-300">
-                就活管理ダッシュボード
-              </div>
-            </div>
+    <div className="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col hidden md:flex">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <div className="text-xl font-bold text-orange-600 flex items-center gap-2">
+            <i className="fa-solid fa-seedling"></i>
+            Easy Job Hunting
           </div>
-          <p className="text-sm text-slate-300 leading-6">
-            メール、選考予定、企業メモをまとめて見渡せるようにした管理画面です。
-          </p>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
-              className={`app-nav-link flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium ${item.active ? "bg-blue-500 text-white shadow-lg shadow-blue-950/20" : "bg-white/5 text-slate-200 hover:bg-white/10"}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                item.active
+                  ? "bg-orange-50 text-orange-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"
+              }`}
             >
-              <MaterialIcon
-                name={item.icon}
-                className={`text-[20px] ${item.active ? "text-white" : "text-blue-200"}`}
-              />
+              <i className={`${item.icon} w-5`}></i>
               {item.label}
             </Link>
           ))}
         </nav>
+
+        <div className="p-4 border-t border-gray-100">
+          <button
+            type="button"
+            className="flex items-center gap-3 px-4 py-2 w-full text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <i className="fa-solid fa-arrow-right-from-bracket w-5"></i>
+            ログアウト
+          </button>
+        </div>
       </aside>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <header className="section-card glass-panel px-5 py-4 sm:px-6 sm:py-5 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left">
-          <div>
-            <div className="chip mb-2 w-fit">
-              <MaterialIcon name="calendar_month" className="text-[18px]" />
-              就活管理ダッシュボード
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
+          <h1 className="text-xl font-semibold text-gray-800">ダッシュボード</h1>
+
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500 hidden sm:inline-block">
+              今日もお疲れ様です！一つずつ進めていきましょう🍊
+            </span>
+            <div className="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold border border-orange-200">
+              S
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">
-              今日の就活状況をまとめて確認
-            </h1>
-            <p className="text-sm text-slate-600">
-              メールと予定を同じ画面で追えるように整理しています。
-            </p>
           </div>
-          <span className="chip text-sm">
-            <MaterialIcon name="person" className="text-[18px]" />
-            ようこそ、ユーザーさん
-          </span>
         </header>
 
-        <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-6">
-          <div className="section-card glass-panel p-6 text-left">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-                <MaterialIcon name="mail" className="text-[24px]" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  就活メールチェッカー
-                </h3>
-                <p className="text-sm text-slate-500">
-                  重要メールだけを拾って表示します
-                </p>
-              </div>
-            </div>
-            <p className="text-sm text-slate-600 leading-7">
-              AIフィルターがメルマガを自動で弾き、面接や選考に関する重要なメールだけを厳選して表示します。
-            </p>
-            <Link
-              to="/mails"
-              className="app-button app-button-primary inline-flex items-center gap-2 rounded-2xl px-4 py-3 mt-5 text-sm font-semibold"
-            >
-              <MaterialIcon
-                name="arrow_forward"
-                className="text-[20px] text-white"
-              />
-              メール一覧を見る
-            </Link>
-          </div>
-
-          <div className="section-card glass-panel p-5 text-left">
-            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <MaterialIcon name="event_note" className="text-[20px]" />
-              選考の見通し
-            </h3>
-            <div className="grid sm:grid-cols-3 gap-3 text-sm">
-              {[
-                ["mail", "重要メール", "最新5件を表示"],
-                ["schedule", "日程管理", "面接予定を確認"],
-                ["database", "企業情報", "登録済み企業を一覧化"],
-              ].map(([icon, title, desc]) => (
-                <div
-                  key={title}
-                  className="rounded-2xl border border-slate-200/70 bg-white/70 p-4"
-                >
-                  <MaterialIcon name={icon} className="text-[22px] mb-2" />
-                  <div className="font-semibold text-slate-900">{title}</div>
-                  <div className="text-slate-500 text-xs mt-1 leading-5">
-                    {desc}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 🗺️ 選考ロードマップ状況（現在地と次に行うべきこと） */}
-        <div className="mb-8 mt-8 text-left">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <MaterialIcon name="alt_route" className="text-[22px] text-blue-600" />
-              選考ロードマップ状況（現在地と次のToDo）
-            </h2>
-            <Link
-              to="/roadmap"
-              className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              全ロードマップを管理 ↗
-            </Link>
-          </div>
-
-          {loadingRoadmaps ? (
-            <div className="section-card p-6 text-center text-slate-500 text-sm">
-              ロードマップ状況を読み込み中...
-            </div>
-          ) : roadmaps.length === 0 ? (
-            <div className="section-card p-6 text-center bg-white/70">
-              <p className="text-sm text-slate-600 mb-3">
-                登録企業ごとの選考ロードマップを作成すると、現在地と次のアクションがここに整理されます。
-              </p>
-              <Link
-                to="/company-register"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition"
-              >
-                <MaterialIcon name="add" className="text-[16px]" />
-                企業を登録してロードマップを作成
+        <div className="flex-1 overflow-y-auto p-8">
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i className="fa-solid fa-thumbtack text-orange-500"></i>
+                進行中の選考ロードマップ
+              </h2>
+              <Link to="/roadmap" className="text-sm text-orange-600 hover:underline font-medium">
+                すべて見る
               </Link>
             </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {roadmaps.map((item) => (
-                <div
-                  key={item.company_id}
-                  className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <h4 className="font-bold text-slate-900 text-sm truncate" title={item.company_name}>
-                        {item.company_name}
-                      </h4>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium shrink-0">
-                        {item.company_status || "選考中"}
-                      </span>
+
+            {loadingRoadmaps ? (
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-sm text-gray-500">
+                ロードマップ状況を読み込み中...
+              </div>
+            ) : roadmaps.length === 0 ? (
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-sm text-gray-600">
+                登録企業やロードマップがまだありません。企業を登録して進行状況を管理しましょう。
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {roadmaps.slice(0, 3).map((item) => (
+                  <div
+                    key={item.company_id}
+                    className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+                  >
+                    <div
+                      className={`absolute top-0 left-0 w-1 h-full ${
+                        item.progress_rate >= 50 ? "bg-orange-500" : "bg-blue-500"
+                      }`}
+                    ></div>
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <span
+                          className={`text-xs font-bold px-2 py-1 rounded-md mb-2 inline-block ${
+                            item.progress_rate >= 50
+                              ? "text-orange-600 bg-orange-50"
+                              : "text-blue-600 bg-blue-50"
+                          }`}
+                        >
+                          {item.company_status || "選考中"}
+                        </span>
+                        <h3 className="font-bold text-gray-800">{item.company_name}</h3>
+                      </div>
+                      <span className="text-xs text-gray-400">進捗 {item.progress_rate || 0}%</span>
                     </div>
 
-                    {item.total_steps > 0 ? (
-                      <div className="space-y-2">
-                        {/* 現在地バッジ */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-                            📍 現在地: {item.current_step_title}
-                          </span>
-                        </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          item.progress_rate >= 50 ? "bg-orange-500" : "bg-blue-500"
+                        }`}
+                        style={{ width: `${item.progress_rate || 0}%` }}
+                      ></div>
+                    </div>
 
-                        {/* 次に行うべきこと */}
-                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1 mb-0.5">
-                            <MaterialIcon name="bolt" className="text-[14px] text-amber-500" />
-                            次に行うこと
-                          </div>
-                          <p className="text-xs text-slate-700 leading-snug font-medium line-clamp-2">
-                            {item.next_action}
-                          </p>
-                        </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 mb-1">次に行うべきこと⚡</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {item.next_action || "次のアクションを準備しましょう"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
-                        {/* プログレス */}
-                        <div className="pt-1">
-                          <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-                            <span>進捗</span>
-                            <span>{item.completed_count}/{item.total_steps} 完了 ({item.progress_rate}%)</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <i className="fa-regular fa-calendar text-orange-500"></i>
+                  選考カレンダー
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => openNewEventForm()}
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                >
+                  <i className="fa-solid fa-plus"></i>
+                  予定を追加
+                </button>
+              </div>
+
+              {loadingCalendar ? (
+                <div className="flex-1 border border-gray-100 rounded-xl bg-gray-50 p-6 text-sm text-gray-500">
+                  カレンダーを読み込み中です...
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 border border-gray-100 rounded-xl overflow-hidden flex flex-col min-h-[400px]">
+                    <FullCalendar
+                      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                      initialView="dayGridMonth"
+                      locale="ja"
+                      events={events}
+                      eventClick={handleEventClick}
+                      dateClick={(info) => openNewEventForm(info.dateStr)}
+                      headerToolbar={{
+                        left: "prev,next today",
+                        center: "title",
+                        right: "dayGridMonth,timeGridWeek",
+                      }}
+                      buttonText={{ today: "今日", month: "月", week: "週" }}
+                      height="auto"
+                      eventColor="#f97316"
+                      eventTextColor="#ffffff"
+                    />
+                  </div>
+
+                  <div className="mt-4 border-t border-gray-100 pt-4">
+                    {selectedEvent ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-orange-600 mb-1">選考予定の詳細</p>
+                            <h3 className="text-base font-bold text-gray-800">{selectedEvent.company}</h3>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className="bg-blue-600 h-1.5 rounded-full transition-all"
-                              style={{ width: `${item.progress_rate}%` }}
-                            />
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEvent(null)}
+                            className="text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            閉じる
+                          </button>
+                        </div>
+                        <div className="rounded-xl bg-orange-50 border border-orange-100 p-3 text-sm text-gray-700">
+                          <div className="font-semibold mb-1">{selectedEvent.jobTitle}</div>
+                          <div>日付: {selectedEvent.dateStr.replace(/-/g, "/")}</div>
+                          <div>時間: {selectedEvent.timeStr}</div>
+                          {selectedEvent.description && <div className="mt-2">メモ: {selectedEvent.description}</div>}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={openEditEventForm}
+                            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                          >
+                            編集
+                          </button>
+                          <button
+                            type="button"
+                            onClick={deleteSelectedEvent}
+                            className="flex-1 bg-red-50 text-red-700 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium"
+                          >
+                            削除
+                          </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="py-3 text-center">
-                        <span className="text-xs text-slate-400 block mb-2">ロードマップ未作成</span>
-                        <Link
-                          to={`/roadmap?companyId=${item.company_id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition"
-                        >
-                          <MaterialIcon name="add" className="text-[15px]" />
-                          ロードマップ作成
-                        </Link>
-                      </div>
+                      <p className="text-sm text-gray-500">カレンダーの予定をクリックすると詳細が表示されます。</p>
                     )}
                   </div>
+                </>
+              )}
+            </section>
 
-                  {item.total_steps > 0 && (
-                    <div className="mt-3 pt-2 border-t border-slate-100 flex justify-end">
-                      <Link
-                        to={`/roadmap?companyId=${item.company_id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        詳細・進める
-                        <MaterialIcon name="chevron_right" className="text-[16px]" />
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="mb-8 mt-8">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 text-left">
-            <MaterialIcon name="calendar_month" className="text-[20px]" />
-            選考カレンダー
-            <button
-              onClick={() => openNewEventForm()}
-              className="app-button app-button-primary ml-auto inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold"
-            >
-              <MaterialIcon name="add" className="text-[18px]" />
-              予定を作成
-            </button>
-          </h2>
-          {loadingCalendar ? (
-            <div className="section-card p-12 text-slate-500">
-              カレンダーを読み込み中です...
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              <div className="lg:col-span-3 section-card p-4 sm:p-6 overflow-hidden">
-                <FullCalendar
-                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                  initialView="dayGridMonth"
-                  locale="ja"
-                  events={events}
-                  eventClick={handleEventClick}
-                  dateClick={(info) => openNewEventForm(info.dateStr)}
-                  headerToolbar={{
-                    left: "prev,next today",
-                    center: "title",
-                    right: "dayGridMonth,timeGridWeek",
-                  }}
-                  buttonText={{ today: "今日", month: "月", week: "週" }}
-                  height="auto"
-                  eventColor="#2563eb"
-                  eventTextColor="#ffffff"
-                />
+            <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <i className="fa-solid fa-inbox text-orange-500"></i>
+                  最新の就活メール
+                </h2>
+                <Link to="/mails" className="text-sm text-orange-600 hover:underline font-medium">
+                  すべて見る
+                </Link>
               </div>
 
-              <div className="section-card p-6 h-fit text-left">
-                <h3 className="font-bold text-slate-800 text-base mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
-                  <MaterialIcon name="info" className="text-[18px]" />
-                  選考の詳細
-                </h3>
-                {selectedEvent ? (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                      <span className="inline-flex items-center gap-1 bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold mb-2">
-                        <MaterialIcon
-                          name="apartment"
-                          className="text-[16px] text-white"
-                        />
-                        {selectedEvent.company}
-                      </span>
-                      <h4 className="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2">
-                        <MaterialIcon
-                          name="assignment_ind"
-                          className="text-[18px]"
-                        />
-                        {selectedEvent.jobTitle}
-                      </h4>
-                      <p className="text-xs text-slate-500 font-medium mt-2 flex items-center gap-2">
-                        <MaterialIcon name="event" className="text-[16px]" />
-                        日付: {selectedEvent.dateStr.replace(/-/g, "/")}
-                      </p>
-                      <p className="text-xs text-slate-500 font-medium flex items-center gap-2">
-                        <MaterialIcon name="schedule" className="text-[16px]" />
-                        時間: {selectedEvent.timeStr}
-                      </p>
-                      <div className="flex gap-2 pt-2">
-                        <button onClick={openEditEventForm} className="app-button flex-1 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white">
-                          <MaterialIcon name="edit" className="mr-1 text-[16px]" />編集
-                        </button>
-                        <button onClick={deleteSelectedEvent} className="app-button flex-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-                          <MaterialIcon name="delete" className="mr-1 text-[16px]" />削除
-                        </button>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setSelectedEvent(null)}
-                      className="app-button w-full py-2.5 text-xs bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition border border-slate-200"
-                    >
-                      詳細を閉じる
-                    </button>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                {loadingMails ? (
+                  <div className="text-sm text-gray-500">Gmailから就活メールをスキャンしています...</div>
+                ) : errorMail ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                    {errorMail}
                   </div>
-                ) : (
-                  <div className="text-center py-12 text-slate-400 text-xs">
-                    カレンダーの予定をクリックすると詳細が表示されます。
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {eventFormOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-            <form
-              onSubmit={(event) => { event.preventDefault(); saveEvent(eventForm).catch((error) => alert(error.message)); }}
-              className="section-card glass-panel w-full max-w-lg space-y-4 p-6 text-left"
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-900">{eventForm.id ? "予定を編集" : "予定を作成"}</h2>
-                <button type="button" onClick={() => setEventFormOpen(false)} className="text-slate-500"><MaterialIcon name="close" /></button>
-              </div>
-              {[["company", "企業名", "text"], ["title", "イベント名", "text"], ["date", "開催日", "date"], ["start_time", "開始時刻", "time"], ["end_time", "終了時刻", "time"]].map(([field, label, type]) => (
-                <label key={field} className="block text-sm font-semibold text-slate-700">
-                  {label}
-                  <input required value={eventForm[field]} type={type} onChange={(e) => setEventForm({ ...eventForm, [field]: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" />
-                </label>
-              ))}
-              <label className="block text-sm font-semibold text-slate-700">
-                メモ
-                <textarea value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" />
-              </label>
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setEventFormOpen(false)} className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">キャンセル</button>
-                <button type="submit" className="app-button app-button-primary rounded-xl px-4 py-2 text-sm font-semibold">保存</button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* メール解析セクション */}
-        <div className="text-left">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <MaterialIcon name="mark_email_unread" className="text-[20px]" />
-            自動検知された就活メール（最新5件）
-          </h2>
-
-          {loadingMails ? (
-            <div className="section-card p-12 text-slate-500 text-center">
-              Gmailから就活メールをスキャンしています...
-            </div>
-          ) : errorMail ? (
-            <div className="p-6 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-sm section-card">
-              <MaterialIcon
-                name="error"
-                className="text-[18px] text-red-600 mr-2"
-              />
-              {errorMail}
-            </div>
-          ) : (
-            <div className="section-card overflow-hidden">
-              <div className="divide-y divide-slate-200">
-                {mails.length > 0 ? (
+                ) : mails.length > 0 ? (
                   mails.map((mail) => (
                     <div
                       key={mail.id}
-                      className="p-6 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50/80 transition text-left"
+                      className="group border border-gray-100 rounded-xl p-4 hover:border-orange-300 hover:bg-orange-50/30 transition-all cursor-pointer bg-white"
                     >
-                      <div className="mb-2 sm:mb-0">
-                        <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-semibold mb-1">
-                          <MaterialIcon
-                            name="mail"
-                            className="text-[16px] text-blue-600"
-                          />
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-xs font-bold text-gray-800 truncate pr-2">
                           {mail.from}
                         </span>
-                        <h4 className="text-base font-semibold text-slate-800 mt-1 flex items-center gap-2">
-                          <MaterialIcon
-                            name="subject"
-                            className="text-[18px]"
-                          />
-                          {mail.subject}
-                        </h4>
-                        <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-2">
-                          <MaterialIcon
-                            name="schedule"
-                            className="text-[16px]"
-                          />
-                          受信日時: {mail.date}
-                        </p>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">{mail.date}</span>
                       </div>
-                      <div>
-                        <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-100 text-amber-800">
-                          <MaterialIcon
-                            name="bolt"
-                            className="text-[16px] text-amber-700"
-                          />
-                          自動解析済
-                        </span>
+                      <h3 className="text-sm font-bold text-gray-800 mb-2 line-clamp-1">
+                        {mail.subject}
+                      </h3>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex gap-2">
+                          <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded">就活</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1"
+                        >
+                          <i className="fa-solid fa-wand-magic-sparkles"></i>
+                          予定を抽出
+                        </button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-slate-500">
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-500">
                     重要な就活メールは現在ありません。
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            </section>
+          </div>
         </div>
       </main>
+
+      {eventFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              saveEvent(eventForm).catch((error) => alert(error.message));
+            }}
+            className="bg-white w-full max-w-lg space-y-4 p-6 rounded-2xl shadow-xl border border-gray-100 text-left"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-800">{eventForm.id ? "予定を編集" : "予定を作成"}</h2>
+              <button type="button" onClick={() => setEventFormOpen(false)} className="text-gray-500">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {[
+              ["company", "企業名", "text"],
+              ["title", "イベント名", "text"],
+              ["date", "開催日", "date"],
+              ["start_time", "開始時刻", "time"],
+              ["end_time", "終了時刻", "time"],
+            ].map(([field, label, type]) => (
+              <label key={field} className="block text-sm font-semibold text-gray-700">
+                {label}
+                <input
+                  required
+                  value={eventForm[field]}
+                  type={type}
+                  onChange={(e) => setEventForm({ ...eventForm, [field]: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 font-normal text-gray-800"
+                />
+              </label>
+            ))}
+
+            <label className="block text-sm font-semibold text-gray-700">
+              メモ
+              <textarea
+                value={eventForm.description}
+                onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                className="mt-1 min-h-[120px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 font-normal text-gray-800"
+              />
+            </label>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEventFormOpen(false)}
+                className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2 text-sm font-semibold text-white"
+              >
+                保存
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
