@@ -2,6 +2,7 @@ const iconMap = {
   add: "fa-solid fa-plus",
   add_road: "fa-solid fa-road",
   alt_route: "fa-solid fa-route",
+  auto_stories: "fa-solid fa-book-open-reader",
   arrow_back: "fa-solid fa-arrow-left",
   auto_awesome: "fa-solid fa-wand-magic-sparkles",
   badge: "fa-solid fa-id-badge",
@@ -48,6 +49,8 @@ const iconMap = {
   subject: "fa-solid fa-align-left",
   timeline: "fa-solid fa-chart-line",
   trending_up: "fa-solid fa-arrow-trend-up",
+  verified: "fa-solid fa-circle-check",
+  visibility: "fa-solid fa-eye",
   warning: "fa-solid fa-triangle-exclamation",
 };
 

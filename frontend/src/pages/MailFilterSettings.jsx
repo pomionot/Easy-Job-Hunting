@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import MaterialIcon from "../components/MaterialIcon";
 
 const EMPTY_FORM = { email: "", type: "include" };
 
@@ -9,7 +8,6 @@ export default function MailFilterSettings() {
   const [includeEmails, setIncludeEmails] = useState([]);
   const [excludeEmails, setExcludeEmails] = useState([]);
   const [draft, setDraft] = useState({ ...EMPTY_FORM });
-  const [addingType, setAddingType] = useState("include");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -64,7 +62,6 @@ export default function MailFilterSettings() {
         throw new Error(data?.error || "追加に失敗しました");
       }
       setDraft({ ...EMPTY_FORM });
-      setAddingType("include");
       setMessage("メールアドレスを追加しました");
       await fetchFilters();
     } catch (err) {
@@ -111,31 +108,57 @@ export default function MailFilterSettings() {
     }
   };
 
+  const saveAllFilters = async () => {
+    if (!uid) {
+      setMessage("ログイン情報が見つかりません");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch("http://localhost:8080/api/mail-filters", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: Number(uid),
+          include_emails: includeEmails.map((entry) => entry.email).join(","),
+          exclude_emails: excludeEmails.map((entry) => entry.email).join(","),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || "保存に失敗しました");
+      }
+      setMessage("メールフィルターを保存しました");
+      await fetchFilters();
+    } catch (err) {
+      console.error(err);
+      setMessage(err.message || "保存に失敗しました");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const renderEntryList = (entries, type) => (
-    <div className="rounded-2xl border border-slate-200 bg-white/80 p-3">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <strong className="text-sm font-bold text-slate-800">
+    <section className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+      <div className={`p-4 border-b border-gray-100 flex justify-between items-center ${type === "include" ? "bg-orange-50/50" : "bg-gray-50"}`}>
+        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+          <i className={`${type === "include" ? "fa-solid fa-check-circle text-orange-500" : "fa-solid fa-ban text-gray-400"}`} aria-hidden="true" />
           {type === "include" ? "必ず含める" : "除外する"}
-        </strong>
-        <button
-          type="button"
-          onClick={() => {
-            setAddingType(type);
-            setDraft({ email: "", type });
-          }}
-          className="inline-flex items-center gap-1 rounded-full bg-blue-600 text-white px-2.5 py-1.5 text-xs font-semibold"
-        >
-          <MaterialIcon name="add" className="text-[16px]" />
-          追加
-        </button>
+        </h3>
+        <span className="text-xs font-medium bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-md">
+          {entries.length}件
+        </span>
       </div>
 
       {entries.length === 0 ? (
-        <div className="text-xs text-slate-500">まだ登録はありません</div>
+        <div className="p-8 flex flex-col items-center justify-center text-center">
+          <p className="text-sm text-gray-400">まだ登録はありません</p>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-gray-100 flex-1">
           {entries.map((entry) => (
-            <div key={entry.id} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+            <div key={entry.id} className="p-4 flex items-center justify-between gap-3 hover:bg-gray-50 transition-colors group">
               <input
                 value={entry.email}
                 onChange={(e) => {
@@ -143,98 +166,162 @@ export default function MailFilterSettings() {
                   if (type === "include") setIncludeEmails(next);
                   else setExcludeEmails(next);
                 }}
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-200"
+                aria-label={`${type === "include" ? "含める" : "除外する"}メールアドレス`}
+                className="flex-1 min-w-0 bg-transparent text-sm text-gray-700 font-medium break-all border-0 p-0 outline-none focus:ring-0"
               />
-              <button
-                type="button"
-                onClick={() => updateEntry(entry.id, type, entry.email)}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold"
-              >
-                保存
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteEntry(entry.id)}
-                className="px-2.5 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold"
-              >
-                削除
-              </button>
+              <div className="flex items-center gap-2 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => updateEntry(entry.id, type, entry.email)}
+                  title="編集内容を保存"
+                  aria-label="編集内容を保存"
+                  className="w-8 h-8 rounded-full text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center justify-center transition-colors"
+                >
+                  <i className="fa-solid fa-pen text-sm" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteEntry(entry.id)}
+                  title="削除"
+                  aria-label="削除"
+                  className="w-8 h-8 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"
+                >
+                  <i className="fa-solid fa-trash-can text-sm" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 
   if (loading) {
     return (
-      <div className="min-h-screen soft-grid flex items-center justify-center p-6">
-        <div className="section-card glass-panel p-8 text-center max-w-md w-full">
-          <MaterialIcon name="filter_alt" className="text-[36px] mb-3" />
-          <div className="font-semibold text-slate-900 mb-1">フィルター設定を読み込み中</div>
-          <div className="text-sm text-slate-500">メールアドレス設定を確認しています...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center max-w-md w-full shadow-sm">
+          <i className="fa-solid fa-filter text-4xl text-orange-500 mb-3" aria-hidden="true" />
+          <div className="font-semibold text-gray-900 mb-1">フィルター設定を読み込み中</div>
+          <div className="text-sm text-gray-500">メールアドレス設定を確認しています...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen soft-grid p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl w-full section-card glass-panel p-6 sm:p-8 text-left">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-              <MaterialIcon name="filter_alt" className="text-[24px] text-blue-700" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900 m-0">メールフィルター設定</h2>
-              <p className="text-sm text-slate-500 mt-1">送信元メールアドレスを1件ずつ管理して、メールを厳選します</p>
-            </div>
-          </div>
-          <Link to="/dashboard" className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
-            <MaterialIcon name="arrow_back" className="text-[16px]" />
-            ダッシュボードへ戻る
+    <div className="bg-gray-50 text-gray-800 flex min-h-screen overflow-hidden">
+      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <Link to="/dashboard" className="text-xl font-bold text-orange-600 flex items-center gap-2">
+            <i className="fa-solid fa-seedling" aria-hidden="true" />
+            Easy Job Hunting
           </Link>
         </div>
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {[
+            ["/dashboard", "fa-solid fa-house", "ホーム"],
+            ["/mails", "fa-regular fa-envelope", "メール一覧"],
+            ["/company-list", "fa-regular fa-building", "企業管理リスト"],
+            ["/roadmap", "fa-solid fa-map-location-dot", "就活ロードマップ"],
+            ["/profile", "fa-regular fa-id-card", "プロフィール設定"],
+            ["/mail-filters", "fa-solid fa-sliders", "メールフィルター"],
+          ].map(([to, icon, label]) => (
+            <Link
+              key={to}
+              to={to}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${to === "/mail-filters" ? "bg-orange-50 text-orange-600" : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"}`}
+            >
+              <i className={`${icon} w-5`} aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </aside>
 
-        {(addingType || draft.email) && (
-          <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
+      <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8 shrink-0">
+          <h1 className="text-xl font-semibold text-gray-800">メールフィルター設定</h1>
+          <Link to="/dashboard" className="text-sm text-orange-600 hover:text-orange-700 hover:underline font-medium flex items-center gap-1">
+            <i className="fa-solid fa-arrow-left" aria-hidden="true" />
+            ダッシュボードへ戻る
+          </Link>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+          <div className="max-w-5xl mx-auto space-y-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-500 flex items-center justify-center text-xl shrink-0">
+                <i className="fa-solid fa-filter" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">メールフィルター設定</h2>
+                <p className="text-gray-500 text-sm mt-1">送信元メールアドレスを1件ずつ管理して、メールを厳選します</p>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-3 items-center">
               <select
                 value={draft.type}
-                onChange={(e) => setDraft({ ...draft, type: e.target.value })}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                onChange={(e) => {
+                  setDraft({ ...draft, type: e.target.value });
+                }}
+                className="w-full sm:w-40 bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-xl focus:ring-orange-500 focus:border-orange-500 block p-3 outline-none transition-colors"
               >
                 <option value="include">必ず含める</option>
                 <option value="exclude">除外する</option>
               </select>
-              <input
-                value={draft.email}
-                onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                placeholder="例: recruit@company.com"
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-200"
-              />
-              <button
-                type="button"
-                onClick={addEntry}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
-              >
-                <MaterialIcon name="add" className="text-[18px]" />
+              <div className="relative w-full flex-1">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                  <i className="fa-regular fa-envelope" aria-hidden="true" />
+                </div>
+                <input
+                  type="email"
+                  value={draft.email}
+                  onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+                  placeholder="例: recruit@company.com"
+                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-orange-500 focus:border-orange-500 block w-full pl-10 p-3 outline-none transition-colors"
+                />
+              </div>
+              <button type="button" onClick={addEntry} className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 shrink-0">
+                <i className="fa-solid fa-plus" aria-hidden="true" />
                 追加する
               </button>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {renderEntryList(includeEmails, "include")}
+              {renderEntryList(excludeEmails, "exclude")}
+            </div>
+
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-5 flex gap-4">
+              <div className="text-orange-500 shrink-0 mt-0.5">
+                <i className="fa-solid fa-circle-info" aria-hidden="true" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-orange-800 mb-2">メール一覧の表示ロジック（適用順）</h4>
+                <ol className="list-decimal list-inside text-xs text-orange-700 space-y-1">
+                  <li>就活キーワード（「面接」「選考」など）を含むメールを抽出</li>
+                  <li><span className="font-bold">「必ず含める」</span>に登録された送信元のメールを追加</li>
+                  <li>除外キーワード（「メルマガ」など）を含むメールを除外</li>
+                  <li><span className="font-bold">「除外する」</span>に登録された送信元のメールを最終的に除外</li>
+                </ol>
+              </div>
+            </div>
+
+            {message && (
+              <p className={`text-sm ${message.includes("失敗") || message.includes("入力") || message.includes("見つかり") ? "text-red-600" : "text-green-600"}`}>
+                {message}
+              </p>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <button type="button" onClick={saveAllFilters} disabled={saving} className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-wait">
+                {saving ? "保存中..." : "変更を保存する"}
+              </button>
+            </div>
           </div>
-        )}
-
-        <div className="grid gap-5 md:grid-cols-2">
-          {renderEntryList(includeEmails, "include")}
-          {renderEntryList(excludeEmails, "exclude")}
         </div>
-
-        <div className="mt-6 text-sm text-slate-600">
-          {message && <span className={message.includes("失敗") || message.includes("入力") ? "text-rose-700" : "text-emerald-700"}>{message}</span>}
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

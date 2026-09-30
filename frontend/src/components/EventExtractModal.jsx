@@ -1,18 +1,15 @@
-import React, { useState } from "react";
-import MaterialIcon from "./MaterialIcon";
+import React, { useEffect, useState } from "react";
 
 export default function EventExtractModal({ mail, isOpen, onClose, onSave }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [formData, setFormData] = useState({
-    company: "",
-    title: "",
-    date: "",
-    start_time: "",
-    end_time: "",
-    notes: "",
-  });
+
+  useEffect(() => {
+    if (isOpen) {
+      setEvents([]);
+      setLoading(false);
+    }
+  }, [isOpen, mail?.id]);
 
   const extractEvent = async () => {
     if (!mail || !mail.body) {
@@ -32,72 +29,38 @@ export default function EventExtractModal({ mail, isOpen, onClose, onSave }) {
           from: mail.from,
         }),
       });
-
       const data = await response.json();
-      console.log("🔍 イベント抽出レスポンス:", data);
 
       if (!response.ok) {
-        console.error("❌ APIエラー:", data);
         alert(`エラー: ${data.error || "不明なエラーが発生しました"}\n\n詳細: ${data.details || ""}`);
         setEvents([]);
         return;
       }
 
-      if (data.has_event && data.events && data.events.length > 0) {
-        console.log(`✅ ${data.events.length}件のイベントを抽出しました`);
+      if (data.has_event && data.events?.length > 0) {
         setEvents(data.events);
       } else {
-        console.warn("⚠️ イベント情報なし:", data);
-        alert("このメール内容からイベント情報を抽出できませんでした。\n\n以下の情報が必要です：\n• 開催日（年月日）\n• 開催時刻\n• イベント種別（面接、説明会など）");
+        alert("このメール内容からイベント情報を抽出できませんでした。\n\n開催日、開催時刻、イベント種別が必要です。");
         setEvents([]);
       }
     } catch (error) {
-      console.error("❌ 通信エラー:", error);
+      console.error("イベント抽出エラー:", error);
       alert(`通信エラーが発生しました: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditEvent = (index) => {
-    const event = events[index];
-    setFormData({
-      company: event.company,
-      title: event.title,
-      date: event.date,
-      start_time: event.start_time,
-      end_time: event.end_time,
-      notes: event.notes || "",
-    });
-    setEditing(index);
-  };
-
-  const handleFormChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSaveEdit = () => {
-    if (editing !== null) {
-      const updatedEvents = [...events];
-      updatedEvents[editing] = {
-        ...updatedEvents[editing],
-        ...formData,
-      };
-      setEvents(updatedEvents);
-      setEditing(null);
-      setFormData({
-        company: "",
-        title: "",
-        date: "",
-        start_time: "",
-        end_time: "",
-        notes: "",
-      });
-    }
+  const handleEventFieldChange = (index, field, value) => {
+    setEvents((previousEvents) =>
+      previousEvents.map((event, eventIndex) =>
+        eventIndex === index ? { ...event, [field]: value } : event,
+      ),
+    );
   };
 
   const handleDeleteEvent = (index) => {
-    setEvents((prev) => prev.filter((_, i) => i !== index));
+    setEvents((previousEvents) => previousEvents.filter((_, eventIndex) => eventIndex !== index));
   };
 
   const handleSaveAll = async () => {
@@ -128,23 +91,21 @@ export default function EventExtractModal({ mail, isOpen, onClose, onSave }) {
         });
 
         if (response.ok) {
-          savedCount++;
+          savedCount += 1;
         } else {
           const data = await response.json().catch(() => ({}));
           errors.push(data.error || `HTTP ${response.status}`);
         }
       } catch (error) {
-        console.error("Error saving event:", error);
+        console.error("イベント保存エラー:", error);
         errors.push(error.message);
       }
     }
 
-    if (onSave) {
-      onSave(savedCount);
-    }
-
+    onSave?.(savedCount);
     if (savedCount > 0) {
       alert(`${savedCount}件のイベントがカレンダーに登録されました！`);
+      setEvents([]);
       onClose();
     } else {
       alert(`イベントを登録できませんでした。\n\n${errors.join("\n") || "ログイン状態を確認してください。"}`);
@@ -154,272 +115,160 @@ export default function EventExtractModal({ mail, isOpen, onClose, onSave }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
-        {/* ヘッダー */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MaterialIcon name="event" className="text-[28px]" />
-            <div>
-              <h2 className="text-xl font-bold">イベント自動抽出</h2>
-              <p className="text-sm text-blue-100">
-                メール本文からカレンダー予定を自動抽出します
+    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="bg-orange-500 text-white px-6 py-5 flex items-start justify-between shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <i className="fa-regular fa-calendar-check text-3xl shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold tracking-wider">イベント自動抽出</h2>
+              <p className="text-orange-100 text-xs mt-1">
+                メール本文からカレンダー予定を自動抽出しました。内容を確認・編集してください。
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-lg p-2 transition"
+            aria-label="モーダルを閉じる"
+            className="text-white hover:text-orange-200 hover:bg-orange-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors shrink-0"
           >
-            <MaterialIcon name="close" className="text-[24px]" />
+            <i className="fa-solid fa-xmark text-xl" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="p-6">
-          {/* メール情報表示 */}
-          <div className="bg-slate-50 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <MaterialIcon name="mail" className="text-[20px] text-slate-600 mt-1" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-900 truncate">
-                  {mail?.subject}
-                </p>
-                <p className="text-sm text-slate-600">
-                  From: {mail?.from?.split("<")[0]?.trim()}
-                </p>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-3">
+              <i className="fa-regular fa-envelope text-gray-400 mt-1" aria-hidden="true" />
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-800 text-sm md:text-base truncate">{mail?.subject}</h3>
+                <p className="text-sm text-gray-500 mt-1">From: {mail?.from?.split("<")[0]?.trim()}</p>
               </div>
             </div>
+            <details className="group mt-2">
+              <summary className="text-xs font-medium text-orange-600 cursor-pointer hover:text-orange-700 flex items-center gap-1 select-none">
+                <i className="fa-solid fa-chevron-right transition-transform group-open:rotate-90" aria-hidden="true" />
+                元のメール本文を確認する
+              </summary>
+              <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs text-gray-600 max-h-32 overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
+                {mail?.body || "本文がありません"}
+              </div>
+            </details>
           </div>
 
-          {/* 抽出ボタン */}
           {events.length === 0 ? (
-            <div className="text-center py-8">
-              <MaterialIcon
-                name="auto_stories"
-                className="text-[56px] text-slate-300 mx-auto mb-3"
-              />
-              <p className="text-slate-600 mb-4">
-                メール本文を分析してカレンダー予定を抽出します
-              </p>
+            <div className="text-center py-10">
+              <i className="fa-solid fa-wand-magic-sparkles text-5xl text-orange-300 mb-4" aria-hidden="true" />
+              <p className="text-gray-600 mb-4">メール本文を分析してカレンダー予定を抽出します</p>
               <button
+                type="button"
                 onClick={extractEvent}
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
-                    <span className="inline-block animate-spin">⌛</span>
+                    <i className="fa-solid fa-spinner animate-spin" aria-hidden="true" />
                     抽出中...
                   </>
                 ) : (
                   <>
-                    <MaterialIcon name="search" className="text-[20px]" />
+                    <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
                     イベントを抽出
                   </>
                 )}
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* 抽出されたイベント一覧 */}
+            <>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <i className="fa-solid fa-wand-magic-sparkles text-orange-500" aria-hidden="true" />
+                  AIが抽出した予定 ({events.length}件)
+                </h3>
+              </div>
+
               {events.map((event, index) => (
-                <div
-                  key={index}
-                  className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition"
-                >
-                  {editing === index ? (
-                    // 編集フォーム
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            企業名
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.company}
-                            onChange={(e) =>
-                              handleFormChange("company", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            イベント種別
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.title}
-                            onChange={(e) =>
-                              handleFormChange("title", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
+                <div key={index} className="bg-white border-2 border-orange-100 rounded-2xl p-5 mb-4 shadow-sm relative transition-all hover:border-orange-300">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEvent(index)}
+                    title="この予定を削除"
+                    aria-label={`${event.title || "予定"}を削除`}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-red-500 hover:bg-red-50 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <i className="fa-solid fa-trash-can" aria-hidden="true" />
+                  </button>
 
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            日付
-                          </label>
-                          <input
-                            type="date"
-                            value={formData.date}
-                            onChange={(e) =>
-                              handleFormChange("date", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            開始時刻
-                          </label>
-                          <input
-                            type="time"
-                            value={formData.start_time}
-                            onChange={(e) =>
-                              handleFormChange("start_time", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            終了時刻
-                          </label>
-                          <input
-                            type="time"
-                            value={formData.end_time}
-                            onChange={(e) =>
-                              handleFormChange("end_time", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">
-                          備考
-                        </label>
-                        <textarea
-                          value={formData.notes}
-                          onChange={(e) =>
-                            handleFormChange("notes", e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-2">
+                    {[
+                      ["company", "企業名", "text", `event-company-${index}`],
+                      ["title", "イベントタイトル", "text", `event-title-${index}`],
+                      ["date", "日付", "date", `event-date-${index}`],
+                    ].map(([field, label, type, id]) => (
+                      <div key={field} className="space-y-1">
+                        <label className="text-xs font-bold text-gray-600" htmlFor={id}>{label}</label>
+                        <input
+                          id={id}
+                          type={type}
+                          value={event[field] || ""}
+                          onChange={(e) => handleEventFieldChange(index, field, e.target.value)}
+                          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                         />
                       </div>
+                    ))}
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleSaveEdit}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition inline-flex items-center justify-center gap-2"
-                        >
-                          <MaterialIcon name="check" className="text-[18px]" />
-                          保存
-                        </button>
-                        <button
-                          onClick={() => setEditing(null)}
-                          className="flex-1 px-4 py-2 bg-slate-300 text-slate-900 font-semibold rounded-lg hover:bg-slate-400 transition inline-flex items-center justify-center gap-2"
-                        >
-                          <MaterialIcon name="close" className="text-[18px]" />
-                          キャンセル
-                        </button>
-                      </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        ["start_time", "開始時刻", `event-start-${index}`],
+                        ["end_time", "終了時刻", `event-end-${index}`],
+                      ].map(([field, label, id]) => (
+                        <div key={field} className="space-y-1">
+                          <label className="text-xs font-bold text-gray-600" htmlFor={id}>{label}</label>
+                          <input
+                            id={id}
+                            type="time"
+                            value={event[field] || ""}
+                            onChange={(e) => handleEventFieldChange(index, field, e.target.value)}
+                            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    // 表示モード
-                    <div>
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-900">
-                            {event.company}
-                          </h4>
-                          <p className="text-sm text-slate-600">{event.title}</p>
-                        </div>
-                        {event.confidence && (
-                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded font-semibold">
-                            信頼度 {(event.confidence * 100).toFixed(0)}%
-                          </span>
-                        )}
-                      </div>
 
-                      <div className="space-y-2 text-sm text-slate-600 mb-3">
-                        <div className="flex items-center gap-2">
-                          <MaterialIcon name="calendar_today" className="text-[16px]" />
-                          <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MaterialIcon name="schedule" className="text-[16px]" />
-                          <span>
-                            {event.start_time} 〜 {event.end_time}
-                          </span>
-                        </div>
-                        {event.notes && (
-                          <div className="flex gap-2">
-                            <MaterialIcon name="note" className="text-[16px]" />
-                            <span className="flex-1">{event.notes}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditEvent(index)}
-                          className="flex-1 px-3 py-2 bg-slate-100 text-slate-900 font-semibold rounded-lg hover:bg-slate-200 transition inline-flex items-center justify-center gap-2 text-sm"
-                        >
-                          <MaterialIcon name="edit" className="text-[16px]" />
-                          編集
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEvent(index)}
-                          className="px-3 py-2 bg-red-50 text-red-600 font-semibold rounded-lg hover:bg-red-100 transition inline-flex items-center gap-2"
-                        >
-                          <MaterialIcon name="delete" className="text-[16px]" />
-                        </button>
-                      </div>
+                    <div className="col-span-1 md:col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-gray-600" htmlFor={`event-notes-${index}`}>メモ</label>
+                      <textarea
+                        id={`event-notes-${index}`}
+                        rows="2"
+                        value={event.notes || ""}
+                        onChange={(e) => handleEventFieldChange(index, "notes", e.target.value)}
+                        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                      />
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
-
-              {/* 別のメールから抽出ボタン */}
-              <button
-                onClick={() => {
-                  setEvents([]);
-                  setEditing(null);
-                }}
-                className="w-full px-4 py-2 border-2 border-dashed border-slate-300 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition inline-flex items-center justify-center gap-2"
-              >
-                <MaterialIcon name="add" className="text-[20px]" />
-                もう一度抽出
-              </button>
-            </div>
+            </>
           )}
         </div>
 
-        {/* フッター */}
-        {events.length > 0 && (
-          <div className="sticky bottom-0 bg-slate-100 border-t border-slate-200 p-6 flex gap-3 justify-end">
+        <div className="p-5 border-t border-gray-200 bg-white flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 shrink-0">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+            キャンセル
+          </button>
+          {events.length > 0 && (
             <button
-              onClick={onClose}
-              className="px-6 py-2 bg-slate-300 text-slate-900 font-semibold rounded-lg hover:bg-slate-400 transition"
-            >
-              キャンセル
-            </button>
-            <button
+              type="button"
               onClick={handleSaveAll}
-              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2"
+              className="px-6 py-2.5 text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
             >
-              <MaterialIcon name="check_circle" className="text-[20px]" />
-              カレンダーに登録（{events.length}件）
+              <i className="fa-regular fa-calendar-check" aria-hidden="true" />
+              表示中の予定をすべて登録
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
