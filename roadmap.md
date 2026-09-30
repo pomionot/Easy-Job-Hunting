@@ -99,21 +99,32 @@
 
 ### 現在確認済み
 
-- Goバックエンド: `go test ./...`
+- Goバックエンド: `go test ./...`（機能テストを含む）
+- Gmail検索条件・メールアドレス正規化: `config/filters_test.go`
 - メール前処理: `handlers/mail_preprocess_test.go`
+- イベント入力・Geminiキー検証: `handlers/events_test.go`
 - 就活ロードマップ処理: `handlers/roadmap_test.go`
+- フロントエンド画面テスト: `cd frontend && npm test -- --run`（9画面・9テスト）
 - フロントエンドビルド: `npm run build` (Vite)
 - 仕様書差分: `git diff --check`
 
 ### 追加するテスト
 
 - [ ] Gmail本文のplain text、HTML、multipart、空本文の抽出テスト
-- [ ] Gmail検索クエリの包含・除外条件テスト
-- [ ] イベントの日付・時刻・必須項目バリデーションテスト
+- [x] Gmail検索クエリの包含・除外条件テスト
+- [x] イベントの必須項目バリデーションテスト（日時のDB書き込み前検証は追加課題）
 - [ ] ユーザーAがユーザーBの企業・予定・フィルターを参照できないことのAPIテスト
 - [ ] Gemini APIの成功、空レスポンス、429、503、壊れたJSONのテスト
-- [ ] 主要画面のフロントエンドビルドとLint
+- [x] 主要画面のフロントエンド画面テスト
+- [x] 主要画面のフロントエンドビルド
+- [ ] 主要画面のLint（既存Hooks規則違反の整理が必要）
 - [ ] OAuthコールバックからダッシュボード表示までのE2Eテスト
+
+### テストディレクトリ方針
+
+- バックエンドの機能テストは対象パッケージの近くに `*_test.go` として置く。
+- フロントエンドの画面テストは `frontend/tests/screens/` に画面ごとに分ける。
+- APIやDBを実際に接続する統合テスト、OAuth/Gmail/Geminiを含むE2Eテストは別環境で追加する。
 
 ## ドキュメント更新ルール
 
