@@ -1,0 +1,13 @@
+# Local runtime files
+.runtime/
+
+# Environment files
+.env
+backend/.env
+
+# Node.js
+frontend/node_modules/
+frontend/dist/
+
+# Go build output
+backend/easy-job-hunting

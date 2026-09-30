@@ -79,6 +79,39 @@ npm run dev
 
 画面は通常 `http://localhost:5173` で起動します。
 
+### 一発起動・停止（Windows）
+
+リポジトリのルートで次のコマンドを実行すると、MySQL、Goバックエンド、Viteフロントエンドをまとめて起動できます。
+
+```powershell
+./start-dev.bat
+```
+
+起動後のURL:
+
+- フロントエンド: `http://localhost:5173`
+- バックエンド: `http://localhost:8080`
+
+停止する場合:
+
+```powershell
+./stop-dev.bat
+```
+
+停止スクリプトはアプリのプロセスだけを終了し、MySQLコンテナとデータは保持します。MySQLも停止する場合は次を実行します。
+
+```powershell
+./stop-dev.bat -StopDatabase
+```
+
+Dockerを使わず、すでにMySQLを起動している場合:
+
+```powershell
+./start-dev.bat -SkipDatabase
+```
+
+起動ログは `.runtime/logs/` に保存されます。PID情報は `.runtime/pids.json` に保存され、停止時に利用されます。
+
 ## テスト
 
 ### バックエンド
