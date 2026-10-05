@@ -41,6 +41,14 @@ func main() {
 
 	r := gin.Default()
 
+	if _, err := os.Stat("../frontend/dist"); err == nil {
+		r.Static("/assets", "../frontend/dist/assets")
+
+		r.NoRoute(func(c *gin.Context) {
+			c.File("../frontend/dist/index.html")
+		})
+	}
+
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", frontEndURL)
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
