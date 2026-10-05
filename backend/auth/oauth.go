@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -19,16 +20,31 @@ func envOrDefault(key, fallback string) string {
 	return value
 }
 
-func InitOauth() {
+func InitOauth() error {
 	if err := godotenv.Load(); err != nil {
 		log.Println(".envの読み込みに失敗したけど、そのまま環境変数を見にいくで: ", err)
 	}
 
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	redirectURL := os.Getenv("REDIRECT_URL")
+	if redirectURL == "" {
+		redirectURL = os.Getenv("GOOGLE_REDIRECT_URL")
+	}
+	if redirectURL == "" {
+		redirectURL = "http://localhost:8080/auth/callback"
+	}
+	if clientID == "" || clientSecret == "" {
+		return fmt.Errorf("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set")
+	}
+
 	GoogleOauthConfig = &oauth2.Config{
-		RedirectURL:  envOrDefault("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/callback"),
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  redirectURL,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/gmail.readonly"},
 		Endpoint:     google.Endpoint,
 	}
+
+	return nil
 }

@@ -16,7 +16,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"golang.org/x/oauth2"
 )
 
 func envOrDefault(key, fallback string) string {
@@ -35,17 +34,26 @@ func main() {
 	}
 	config.InitDB()
 	defer config.DB.Close()
-	auth.InitOauth()
+	if err := auth.InitOauth(); err != nil {
+		log.Fatal("OAuth設定の初期化に失敗しました: ", err)
+	}
 	frontEndURL := strings.TrimRight(envOrDefault("FRONTEND_URL", "http://localhost:5173"), "/")
 	port := strings.TrimPrefix(envOrDefault("PORT", "8080"), ":")
 
 	r := gin.Default()
 
-	if _, err := os.Stat("../frontend/dist"); err == nil {
+	distPath := "../frontend/dist"
+	if info, err := os.Stat(distPath); err == nil && info.IsDir() {
 		r.Static("/assets", "../frontend/dist/assets")
 
 		r.NoRoute(func(c *gin.Context) {
-			c.File("../frontend/dist/index.html")
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") ||
+				c.Request.URL.Path == "/login" ||
+				strings.HasPrefix(c.Request.URL.Path, "/auth/") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "リソースが見つかりません"})
+				return
+			}
+			c.File(distPath + "/index.html")
 		})
 	}
 
@@ -62,13 +70,12 @@ func main() {
 
 	// ログインURLを発行するAPI
 	r.GET("/login", func(c *gin.Context) {
-		url := auth.GoogleOauthConfig.AuthCodeURL(
-			"state-token",
-			oauth2.AccessTypeOffline,
-			oauth2.ApprovalForce,
-			oauth2.SetAuthURLParam("prompt", "select_account"),
-		)
-		c.String(200, url)
+		loginURL, err := auth.GetLoginURL()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.String(http.StatusOK, loginURL)
 	})
 
 	// Googleからのコールバックを受け取るAPI

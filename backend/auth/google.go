@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"os"
 
 	"golang.org/x/oauth2"
@@ -13,10 +14,18 @@ var GoogleConfig *oauth2.Config
 
 // InitGoogleOAuth は.envから環境変数を読み込んでOAuth2の設定を初期化する
 func InitGoogleOAuth() {
+	redirectURL := os.Getenv("REDIRECT_URL")
+	if redirectURL == "" {
+		redirectURL = os.Getenv("GOOGLE_REDIRECT_URL")
+	}
+	if redirectURL == "" {
+		redirectURL = "http://localhost:8080/auth/callback"
+	}
+
 	GoogleConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  envOrDefault("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/callback"),
+		RedirectURL:  redirectURL,
 		Endpoint:     google.Endpoint,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email", // メールアドレス取得用
@@ -26,12 +35,15 @@ func InitGoogleOAuth() {
 }
 
 // GetLoginURL はユーザーをリダイレクトさせるGoogleのログイン画面のURLを生成する
-func GetLoginURL() string {
+func GetLoginURL() (string, error) {
+	if GoogleOauthConfig == nil || GoogleOauthConfig.Endpoint.AuthURL == "" {
+		return "", fmt.Errorf("OAuth設定が初期化されていません")
+	}
+
 	// "state" はセキュリティのためのランダムな文字列（今回は簡易的に"state-token"としています）
-	return GoogleConfig.AuthCodeURL(
+	return GoogleOauthConfig.AuthCodeURL(
 		"state-token",
 		oauth2.AccessTypeOffline,
-		oauth2.ApprovalForce,
 		oauth2.SetAuthURLParam("prompt", "select_account"),
-	)
+	), nil
 }
