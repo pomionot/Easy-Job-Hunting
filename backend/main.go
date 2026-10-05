@@ -44,7 +44,10 @@ func main() {
 
 	distPath := "../frontend/dist"
 	if info, err := os.Stat(distPath); err == nil && info.IsDir() {
-		r.Static("/assets", "../frontend/dist/assets")
+		r.Static("/assets", distPath+"/assets")
+		if _, err := os.Stat(distPath + "/favicon.svg"); err == nil {
+			r.StaticFile("/favicon.svg", distPath+"/favicon.svg")
+		}
 
 		r.NoRoute(func(c *gin.Context) {
 			if strings.HasPrefix(c.Request.URL.Path, "/api/") ||
