@@ -44,7 +44,7 @@ export default function CompanyRoadmap() {
 
   // 企業一覧を取得
   const fetchCompanies = (userUid) => {
-    fetch(`http://localhost:8080/api/companies?uid=${userUid}`)
+    fetch(`/api/companies?uid=${userUid}`)
       .then((res) => {
         if (!res.ok) throw new Error("企業データの取得に失敗しました");
         return res.json();
@@ -75,7 +75,7 @@ export default function CompanyRoadmap() {
     if (!companyId) return;
     setRoadmapLoading(true);
     setError("");
-    fetch(`http://localhost:8080/api/companies/${companyId}/roadmap?uid=${userUid}`)
+    fetch(`/api/companies/${companyId}/roadmap?uid=${userUid}`)
       .then((res) => {
         if (!res.ok) throw new Error("ロードマップの取得に失敗しました");
         return res.json();
@@ -102,7 +102,7 @@ export default function CompanyRoadmap() {
   const handleInitRoadmap = (type) => {
     if (!selectedCompanyId) return;
     setActionLoading(true);
-    fetch(`http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/init?uid=${uid}`, {
+    fetch(`/api/companies/${selectedCompanyId}/roadmap/init?uid=${uid}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type }),
@@ -127,7 +127,7 @@ export default function CompanyRoadmap() {
   // 現在地を設定する
   const handleSetCurrentStep = (stepId, markPrevious = true) => {
     setActionLoading(true);
-    fetch(`http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/current?uid=${uid}`, {
+    fetch(`/api/companies/${selectedCompanyId}/roadmap/current?uid=${uid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -172,7 +172,7 @@ export default function CompanyRoadmap() {
   const handleUpdateStepStatus = (stepId, newStatus) => {
     const target = roadmap.steps.find((s) => s.id === stepId);
     if (!target) return;
-    fetch(`http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/steps/${stepId}?uid=${uid}`, {
+    fetch(`/api/companies/${selectedCompanyId}/roadmap/steps/${stepId}?uid=${uid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -220,8 +220,8 @@ export default function CompanyRoadmap() {
 
     const isEdit = !!editingStep;
     const url = isEdit
-      ? `http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/steps/${editingStep.id}?uid=${uid}`
-      : `http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/steps?uid=${uid}`;
+      ? `/api/companies/${selectedCompanyId}/roadmap/steps/${editingStep.id}?uid=${uid}`
+      : `/api/companies/${selectedCompanyId}/roadmap/steps?uid=${uid}`;
     const method = isEdit ? "PUT" : "POST";
 
     fetch(url, {
@@ -245,7 +245,7 @@ export default function CompanyRoadmap() {
   // ステップ削除
   const handleDeleteStep = (stepId) => {
     if (!window.confirm("このステップを削除してもよろしいですか？")) return;
-    fetch(`http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/steps/${stepId}?uid=${uid}`, {
+    fetch(`/api/companies/${selectedCompanyId}/roadmap/steps/${stepId}?uid=${uid}`, {
       method: "DELETE",
     })
       .then((res) => {
@@ -262,7 +262,7 @@ export default function CompanyRoadmap() {
     setAdviceLoading(true);
     setAdviceContent("");
 
-    fetch(`http://localhost:8080/api/companies/${selectedCompanyId}/roadmap/advice?uid=${uid}`, {
+    fetch(`/api/companies/${selectedCompanyId}/roadmap/advice?uid=${uid}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

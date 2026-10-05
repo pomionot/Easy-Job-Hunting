@@ -19,7 +19,7 @@ export default function EventExtractModal({ mail, isOpen, onClose, onSave }) {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/extract-event", {
+      const response = await fetch("/api/extract-event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,7 +76,7 @@ export default function EventExtractModal({ mail, isOpen, onClose, onSave }) {
     const errors = [];
     for (const event of events) {
       try {
-        const response = await fetch(`http://localhost:8080/api/events${userQuery}`, {
+        const response = await fetch(`/api/events${userQuery}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

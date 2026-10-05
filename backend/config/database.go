@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -112,8 +113,10 @@ func ensureSchema() {
 
 func InitDB() {
 	var err error
-	// パスワードは先ほど疎通確認が取れた 'root' に設定しています
-	dst := "root:root@tcp(127.0.0.1:3306)/easy_job_hunting?parseTime=true"
+	dst := os.Getenv("DATABASE_URL")
+	if dst == "" {
+		dst = "root:root@tcp(127.0.0.1:3306)/easy_job_hunting?parseTime=true"
+	}
 	DB, err = sql.Open("mysql", dst)
 	if err != nil {
 		log.Fatal("データベースの接続設定に失敗しました: ", err)

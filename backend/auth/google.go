@@ -16,7 +16,7 @@ func InitGoogleOAuth() {
 	GoogleConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+		RedirectURL:  envOrDefault("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/callback"),
 		Endpoint:     google.Endpoint,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email", // メールアドレス取得用

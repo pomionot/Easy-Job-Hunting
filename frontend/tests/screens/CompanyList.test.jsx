@@ -12,5 +12,5 @@ test("企業一覧とロードマップ概要を表示し、ステータスを�
   render(<CompanyList />, { wrapper: MemoryRouter });
   expect(await screen.findByText("Example株式会社")).toBeInTheDocument();
   fireEvent.change(screen.getByRole("combobox"), { target: { value: "面接中" } });
-  await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("http://localhost:8080/api/companies/status", expect.objectContaining({ method: "PUT" })));
+  await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("/api/companies/status", expect.objectContaining({ method: "PUT" })));
 });

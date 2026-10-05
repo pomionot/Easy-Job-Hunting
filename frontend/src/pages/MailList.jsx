@@ -24,7 +24,7 @@ export default function MailList() {
 
     setLoading(showLoading);
     setRefreshing(!showLoading);
-    fetch(`http://localhost:8080/api/fetch-mails${userQuery}`)
+    fetch(`/api/fetch-mails${userQuery}`)
       .then((res) => {
         // デバッグ用：本当にJSONが返ってきているか、中身のタイプをチェック
         const contentType = res.headers.get("content-type");
@@ -65,7 +65,7 @@ export default function MailList() {
         ? `?email=${encodeURIComponent(userEmail)}`
         : "";
 
-    fetch(`http://localhost:8080/api/mails/${id}${userQuery}`)
+    fetch(`/api/mails/${id}${userQuery}`)
       .then((res) => {
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {

@@ -24,7 +24,7 @@ export default function Profile() {
 
       // バックエンドからプロフィールを取得
       fetch(
-        `http://localhost:8080/api/profile?uid=${encodeURIComponent(savedUid)}`,
+        `/api/profile?uid=${encodeURIComponent(savedUid)}`,
       )
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -49,7 +49,7 @@ export default function Profile() {
     setMessage(null);
 
     try {
-      const response = await fetch("http://localhost:8080/api/profile", {
+      const response = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

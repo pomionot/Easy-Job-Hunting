@@ -39,7 +39,7 @@ export default function CompanyRegister() {
     };
 
     // Goの企業登録APIへPOSTリクエスト
-    fetch("http://localhost:8080/api/companies", {
+    fetch("/api/companies", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

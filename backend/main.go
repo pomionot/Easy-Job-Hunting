@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 
 	"Easy-Job-Hunting/auth"
 	"Easy-Job-Hunting/config"
@@ -17,6 +19,14 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func envOrDefault(key, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
 func main() {
 	// 各種初期化処理の呼び出し
 	err := godotenv.Load()
@@ -26,11 +36,13 @@ func main() {
 	config.InitDB()
 	defer config.DB.Close()
 	auth.InitOauth()
+	frontEndURL := strings.TrimRight(envOrDefault("FRONTEND_URL", "http://localhost:5173"), "/")
+	port := strings.TrimPrefix(envOrDefault("PORT", "8080"), ":")
 
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "http://localhost:5173")
+		c.Header("Access-Control-Allow-Origin", frontEndURL)
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		if c.Request.Method == http.MethodOptions {
@@ -103,8 +115,8 @@ func main() {
 			return
 		}
 
-		frontEndURL := fmt.Sprintf("http://localhost:5173/?login=success&uid=%d&email=%s", userID, url.QueryEscape(loginEmail))
-		c.Redirect(303, frontEndURL)
+		redirectURL := fmt.Sprintf("%s/?login=success&uid=%d&email=%s", frontEndURL, userID, url.QueryEscape(loginEmail))
+		c.Redirect(303, redirectURL)
 	})
 
 	// 各種APIエンドポイントを外部ハンドラーにマッピング
@@ -138,6 +150,6 @@ func main() {
 	r.GET("/api/roadmaps/summary", handlers.GetRoadmapSummaryHandler)
 	r.POST("/api/companies/:id/roadmap/advice", handlers.GetRoadmapAdviceHandler)
 
-	fmt.Println("サーバーがポート 8080 で起動しました。 http://localhost:8080/login")
-	log.Fatal(r.Run(":8080"))
+	fmt.Printf("サーバーがポート %s で起動しました。 http://localhost:%s/login\n", port, port)
+	log.Fatal(r.Run(":" + port))
 }

@@ -13,5 +13,5 @@ test("メールフィルターを表示し、新しい送信元を追加する",
   const input = await screen.findByPlaceholderText("例: recruit@company.com");
   fireEvent.change(input, { target: { value: "hr@example.com" } });
   fireEvent.click(screen.getByRole("button", { name: "追加する" }));
-  await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("http://localhost:8080/api/mail-filters/items", expect.objectContaining({ method: "POST" })));
+  await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("/api/mail-filters/items", expect.objectContaining({ method: "POST" })));
 });

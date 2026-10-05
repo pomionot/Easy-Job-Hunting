@@ -44,7 +44,7 @@ export default function CompanyList() {
   }, []);
 
   const fetchRoadmapsSummary = (userUid) => {
-    fetch(`http://localhost:8080/api/roadmaps/summary?uid=${userUid}`)
+    fetch(`/api/roadmaps/summary?uid=${userUid}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         const map = {};
@@ -59,7 +59,7 @@ export default function CompanyList() {
   };
 
   const fetchCompanies = (userUid) => {
-    fetch(`http://localhost:8080/api/companies?uid=${userUid}`)
+    fetch(`/api/companies?uid=${userUid}`)
       .then((res) => {
         if (!res.ok) throw new Error("企業データの取得に失敗しました");
         return res.json();
@@ -75,7 +75,7 @@ export default function CompanyList() {
   };
 
   const handleStatusChange = (companyId, newStatus) => {
-    fetch("http://localhost:8080/api/companies/status", {
+    fetch("/api/companies/status", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: companyId, status: newStatus }),
@@ -93,7 +93,7 @@ export default function CompanyList() {
     setActiveCompanyName(companyName);
     setShowModal(true);
 
-    fetch("http://localhost:8080/api/ai/analyze", {
+    fetch("/api/ai/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ company_id: companyId, prompt_type: type }),

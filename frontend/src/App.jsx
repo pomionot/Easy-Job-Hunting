@@ -33,7 +33,7 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://localhost:8080/login");
+      const response = await fetch("/login");
       if (!response.ok) throw new Error("サーバーからのURL取得に失敗したで");
 
       const text = await response.text();

@@ -22,7 +22,7 @@ export default function MailFilterSettings() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/mail-filters?uid=${encodeURIComponent(currentUid)}`);
+      const res = await fetch(`/api/mail-filters?uid=${encodeURIComponent(currentUid)}`);
       if (!res.ok) {
         throw new Error("メールフィルターの取得に失敗しました");
       }
@@ -49,7 +49,7 @@ export default function MailFilterSettings() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/mail-filters/items", {
+      const response = await fetch("/api/mail-filters/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -73,7 +73,7 @@ export default function MailFilterSettings() {
 
   const updateEntry = async (id, type, email) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/mail-filters/items/${id}`, {
+      const response = await fetch(`/api/mail-filters/items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid: Number(uid), type, email }),
@@ -92,7 +92,7 @@ export default function MailFilterSettings() {
 
   const deleteEntry = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/mail-filters/items/${id}`, {
+      const response = await fetch(`/api/mail-filters/items/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid: Number(uid) }),
@@ -117,7 +117,7 @@ export default function MailFilterSettings() {
 
     setSaving(true);
     try {
-      const response = await fetch("http://localhost:8080/api/mail-filters", {
+      const response = await fetch("/api/mail-filters", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

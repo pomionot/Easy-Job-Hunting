@@ -12,5 +12,5 @@ test("プロフィールを読み込み、保存する", async () => {
   render(<Profile />, { wrapper: MemoryRouter });
   expect(await screen.findByDisplayValue("就活 太郎")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "プロフィールを保存する" }));
-  await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("http://localhost:8080/api/profile", expect.objectContaining({ method: "POST" })));
+  await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("/api/profile", expect.objectContaining({ method: "POST" })));
 });

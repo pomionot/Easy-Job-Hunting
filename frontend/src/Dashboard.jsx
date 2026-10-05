@@ -36,7 +36,7 @@ export default function Dashboard() {
         ? `?email=${encodeURIComponent(userEmail)}`
         : "";
 
-    fetch(`http://localhost:8080/api/events${userQuery}`)
+    fetch(`/api/events${userQuery}`)
       .then((res) => {
         if (!res.ok) throw new Error("カレンダーデータの取得に失敗しました");
         return res.json();
@@ -78,7 +78,7 @@ export default function Dashboard() {
         ? `?email=${encodeURIComponent(userEmail)}`
         : "";
 
-    fetch(`http://localhost:8080/api/fetch-mails${userQuery}`)
+    fetch(`/api/fetch-mails${userQuery}`)
       .then((res) => {
         if (res.status === 401) {
           throw new Error(
@@ -111,7 +111,7 @@ export default function Dashboard() {
         ? `?email=${encodeURIComponent(userEmail)}`
         : "";
 
-    fetch(`http://localhost:8080/api/roadmaps/summary${userQuery}`)
+    fetch(`/api/roadmaps/summary${userQuery}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         setRoadmaps(Array.isArray(data) ? data : []);
@@ -161,7 +161,7 @@ export default function Dashboard() {
 
   const saveEvent = async (event) => {
     const method = event.id ? "PUT" : "POST";
-    const url = `http://localhost:8080/api/events${event.id ? `/${event.id}` : ""}${getEventQuery()}`;
+    const url = `/api/events${event.id ? `/${event.id}` : ""}${getEventQuery()}`;
     const response = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -178,7 +178,7 @@ export default function Dashboard() {
     if (!window.confirm("この予定を削除しますか？")) return;
     try {
       const response = await fetch(
-        `http://localhost:8080/api/events/${selectedEvent.id}${getEventQuery()}`,
+        `/api/events/${selectedEvent.id}${getEventQuery()}`,
         { method: "DELETE" },
       );
       const data = await response.json().catch(() => ({}));
