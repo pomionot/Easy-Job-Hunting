@@ -42,7 +42,7 @@ func main() {
 
 	r := gin.Default()
 
-	distPath := "../frontend/dist"
+	distPath := envOrDefault("DIST_PATH", "../frontend/dist")
 	if info, err := os.Stat(distPath); err == nil && info.IsDir() {
 		r.Static("/assets", distPath+"/assets")
 		if _, err := os.Stat(distPath + "/favicon.svg"); err == nil {
