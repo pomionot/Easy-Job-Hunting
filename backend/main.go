@@ -62,7 +62,12 @@ func main() {
 
 	// ログインURLを発行するAPI
 	r.GET("/login", func(c *gin.Context) {
-		url := auth.GoogleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+		url := auth.GoogleOauthConfig.AuthCodeURL(
+			"state-token",
+			oauth2.AccessTypeOffline,
+			oauth2.ApprovalForce,
+			oauth2.SetAuthURLParam("prompt", "select_account"),
+		)
 		c.String(200, url)
 	})
 

@@ -28,5 +28,10 @@ func InitGoogleOAuth() {
 // GetLoginURL はユーザーをリダイレクトさせるGoogleのログイン画面のURLを生成する
 func GetLoginURL() string {
 	// "state" はセキュリティのためのランダムな文字列（今回は簡易的に"state-token"としています）
-	return GoogleConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+	return GoogleConfig.AuthCodeURL(
+		"state-token",
+		oauth2.AccessTypeOffline,
+		oauth2.ApprovalForce,
+		oauth2.SetAuthURLParam("prompt", "select_account"),
+	)
 }
