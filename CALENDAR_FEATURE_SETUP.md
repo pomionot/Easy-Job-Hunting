@@ -34,10 +34,18 @@ docker exec -i easy-job-hunting-db mysql -uroot -proot easy_job_hunting < backen
 ```
 
 ### 2. 環境変数確認
-`.env` ファイルに以下が設定されていることを確認：
+`backend/.env.example` を `backend/.env` としてコピーし、以下の値を設定する。秘密情報をGitへコミットしないこと。
 ```
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+REDIRECT_URL=http://localhost:8080/auth/callback
+FRONTEND_URL=http://localhost:5173
+PORT=8080
+DATABASE_URL=root:root@tcp(127.0.0.1:3306)/easy_job_hunting?parseTime=true
 GEMINI_API_KEY=your_gemini_api_key
 ```
+
+Google Cloud Consoleの承認済みリダイレクトURIには、`REDIRECT_URL` と完全一致するURLを登録する。
 
 ### 3. バックエンド起動
 ```bash
@@ -53,6 +61,8 @@ npm install
 npm run dev
 # クライアントが http://localhost:5173 で起動します
 ```
+
+本番環境では、先に `frontend` で `npm run build` を実行する。`frontend/dist` が存在する場合、Goサーバーがビルド成果物を配信し、画面ルートをReactの `index.html` にフォールバックする。
 
 ## 使用方法
 

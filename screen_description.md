@@ -10,14 +10,17 @@
 - ログイン後にURLの `uid` と `email` を `localStorage` に保存する。
 	- `login_user_uid`
 	- `login_user_email`
-- 主要APIのベースURLは `http://localhost:8080`。
+- APIリクエストは `/login`、`/auth/...`、`/api/...` の相対パスを使用する。ローカル開発時はViteのproxyが `http://localhost:8080` へ転送し、本番環境ではGoサーバーまたはリバースプロキシが同一オリジンで処理する。
 - ログイン済み画面の一部は `uid` をクエリパラメータとしてGo APIへ渡す。
 
 ### バックエンド
 
 - エントリーポイントは `backend/main.go`。
 - GinでHTTP APIを提供し、起動時に `config.InitDB()` を呼び出してMySQLへ接続する。
-- DB接続先は現在 `root:root@tcp(127.0.0.1:3306)/easy_job_hunting?parseTime=true` に固定されている。
+- DB接続先は `DATABASE_URL` 環境変数から読み込む。未設定時はローカル開発用の `root:root@tcp(127.0.0.1:3306)/easy_job_hunting?parseTime=true` を使用する。
+- Google OAuthは `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`REDIRECT_URL` 環境変数で設定する。`REDIRECT_URL` 未設定時は旧キー `GOOGLE_REDIRECT_URL` を参照し、それも未設定の場合はローカル用のコールバックURLを使用する。
+- `PORT` はバックエンドの待受ポート、`FRONTEND_URL` はOAuth後のリダイレクト先とCORS許可オリジンに使用する。
+- `frontend/dist` が存在する場合、Goサーバーは静的ファイルを配信し、API・OAuth以外のパスをReactの `index.html` にフォールバックする。
 - `backend/config/database.go` の `ensureSchema()` が以下のテーブルを作成する。
 	- `users`: Googleアカウント、OAuthアクセストークン、リフレッシュトークン
 	- `profiles`: ユーザープロフィール
@@ -46,7 +49,7 @@
 **API・処理経路**
 
 1. `GET /login`
-2. `backend/main.go` が `auth.GoogleOauthConfig.AuthCodeURL()` でGoogle認証URLを生成する。
+2. `backend/auth/oauth.go` が環境変数からOAuth設定を初期化し、`backend/auth/google.go` の `GetLoginURL()` が `prompt=select_account` 付きのGoogle認証URLを生成する。
 3. Google認証後、`GET /auth/callback?code=...` が呼ばれる。
 4. `auth.GoogleOauthConfig.Exchange()` で認証コードをトークンへ交換する。
 5. Google UserInfo APIからメールアドレスを取得する。

@@ -92,6 +92,9 @@ Go + Gin API
 - MySQL: `docker-compose.yml` の `db` サービス
 - バックエンドAPI: `http://localhost:8080`
 - フロントエンド開発サーバー: Viteの標準ポート `5173`
+- フロントエンドのAPIアクセス: 相対パス。ローカル開発時は `frontend/vite.config.js` のproxyでバックエンドへ転送する。
+- 本番配信: `frontend/dist` が存在する場合、Goサーバーが静的ファイルを配信し、画面ルートを `index.html` にフォールバックする。
+- 環境変数: `PORT`、`FRONTEND_URL`、`DATABASE_URL`、`GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、`REDIRECT_URL`、`GEMINI_API_KEY` を利用する。
 
 ## 7. データの扱い
 
@@ -104,6 +107,7 @@ Go + Gin API
 ## 8. 認証・セキュリティの現状
 
 - Google OAuthでGmailアクセストークンを取得する。
+- OAuthのリダイレクトURLは `REDIRECT_URL`（旧キー `GOOGLE_REDIRECT_URL` も互換対応）で設定する。
 - 現在のフロントエンドはログイン後の `uid` と `email` を `localStorage` に保存し、APIのクエリパラメータへ渡している。
 - 現在はサーバー側セッションやJWTによるリクエスト認証を行っていないため、公開環境へ展開する前に認証方式を強化する必要がある。
 - OAuthシークレット、Gmailトークン、Gemini APIキーはソースコードへコミットせず、環境変数または秘密情報管理サービスで管理する。
