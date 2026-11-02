@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 
 	"Easy-Job-Hunting/config"
+	"Easy-Job-Hunting/models"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ProfileRequest struct {
@@ -18,7 +20,7 @@ type ProfileRequest struct {
 }
 
 type ProfileResponse struct {
-	UID            int64  `json:"uid"`
+	UID            string `json:"uid"`
 	Email          string `json:"email"`
 	Name           string `json:"name"`
 	University     string `json:"university"`
@@ -33,28 +35,25 @@ func UpdateProfileHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
 		return
 	}
-
 	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
-	query := `
-		INSERT INTO profiles (user_id, name, university, faculty, target_industry, self_pr)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-		name = VALUES(name),
-		university = VALUES(university),
-		faculty = VALUES(faculty),
-		target_industry = VALUES(target_industry),
-		self_pr = VALUES(self_pr);
-	`
-	if _, err := config.DB.Exec(query, uid, req.Name, req.University, req.Faculty, req.TargetIndustry, req.SelfPR); err != nil {
+	profile := models.Profile{
+		UserID:         uid,
+		Name:           req.Name,
+		University:     req.University,
+		Faculty:        req.Faculty,
+		TargetIndustry: req.TargetIndustry,
+		SelfPR:         req.SelfPR,
+	}
+	err = config.DB.Where("user_id = ?", uid).Assign(profile).FirstOrCreate(&profile).Error
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィールの保存に失敗しました: " + err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "プロフィールを正常に保存しました！"})
 }
 
@@ -65,22 +64,33 @@ func GetProfileHandler(c *gin.Context) {
 		return
 	}
 
-	var profile ProfileResponse
-	err = config.DB.QueryRow(
-		`SELECT u.id, u.email, COALESCE(p.name, ''), COALESCE(p.university, ''), COALESCE(p.faculty, ''), COALESCE(p.target_industry, ''), COALESCE(p.self_pr, '')
-		 FROM users u
-		 LEFT JOIN profiles p ON p.user_id = u.id
-		 WHERE u.id = ?`,
-		uid,
-	).Scan(&profile.UID, &profile.Email, &profile.Name, &profile.University, &profile.Faculty, &profile.TargetIndustry, &profile.SelfPR)
+	var user models.User
+	err = config.DB.First(&user, "id = ?", uid).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ユーザーが見つかりません"})
+		return
+	}
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": "ユーザーが見つかりません"})
-			return
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の取得に失敗しました: " + err.Error()})
+		return
+	}
+
+	var profile models.Profile
+	err = config.DB.Where("user_id = ?", uid).First(&profile).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		profile.UserID = uid
+	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィールの取得に失敗しました: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, profile)
+	c.JSON(http.StatusOK, ProfileResponse{
+		UID:            user.ID.String(),
+		Email:          user.Email,
+		Name:           profile.Name,
+		University:     profile.University,
+		Faculty:        profile.Faculty,
+		TargetIndustry: profile.TargetIndustry,
+		SelfPR:         profile.SelfPR,
+	})
 }

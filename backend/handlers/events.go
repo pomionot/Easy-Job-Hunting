@@ -12,19 +12,21 @@ import (
 	"time"
 
 	"Easy-Job-Hunting/config"
+	"Easy-Job-Hunting/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // Event イベント（面接・説明会等）の構造体
 type Event struct {
-	ID                int    `json:"id"`
-	Date              string `json:"date"`
-	Company           string `json:"company"`
-	Title             string `json:"title"`
-	Time              string `json:"time"` // "HH:MM - HH:MM" の形式
-	Description       string `json:"description,omitempty"`
-	CreatedFromMailID string `json:"created_from_mail_id,omitempty"`
+	ID                uuid.UUID `json:"id"`
+	Date              string    `json:"date"`
+	Company           string    `json:"company"`
+	Title             string    `json:"title"`
+	Time              string    `json:"time"` // "HH:MM - HH:MM" の形式
+	Description       string    `json:"description,omitempty"`
+	CreatedFromMailID string    `json:"created_from_mail_id,omitempty"`
 }
 
 // ExtractedEventData メール本文から抽出されたイベント情報
@@ -259,45 +261,15 @@ func GetEventsHandler(c *gin.Context) {
 		return
 	}
 
-	query := `SELECT id, event_date, company_name, event_title, 
-	                 TIME_FORMAT(start_time, '%H:%i'), TIME_FORMAT(end_time, '%H:%i'),
-	                 description, created_from_mail_id
-	          FROM events 
-	          WHERE user_id = ? 
-	          ORDER BY event_date ASC, start_time ASC`
-
-	rows, err := config.DB.Query(query, uid)
-	if err != nil {
+	var records []models.Event
+	if err := config.DB.Where("user_id = ?", uid).Order("event_date ASC, start_time ASC").Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "イベント取得に失敗しました"})
 		return
 	}
-	defer rows.Close()
-
-	var events []Event
-	for rows.Next() {
-		var event Event
-		var startTime, endTime string
-		var description, mailID *string
-
-		if err := rows.Scan(&event.ID, &event.Date, &event.Company, &event.Title, &startTime, &endTime, &description, &mailID); err != nil {
-			continue
-		}
-
-		event.Time = fmt.Sprintf("%s - %s", startTime, endTime)
-		if description != nil {
-			event.Description = *description
-		}
-		if mailID != nil {
-			event.CreatedFromMailID = *mailID
-		}
-
-		events = append(events, event)
+	events := make([]Event, 0, len(records))
+	for _, record := range records {
+		events = append(events, Event{ID: record.ID, Date: record.EventDate, Company: record.CompanyName, Title: record.EventTitle, Time: fmt.Sprintf("%s - %s", record.StartTime, record.EndTime), Description: record.Description, CreatedFromMailID: record.CreatedFromMailID})
 	}
-
-	if events == nil {
-		events = []Event{}
-	}
-
 	c.JSON(http.StatusOK, events)
 }
 
@@ -317,12 +289,6 @@ func CreateEventHandler(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	_, _, err := resolveUserAccessToken(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
@@ -347,20 +313,12 @@ func CreateEventHandler(c *gin.Context) {
 	}
 
 	// イベントをデータベースに挿入
-	query := `INSERT INTO events (user_id, company_name, event_title, event_date, start_time, end_time, description, created_from_mail_id)
-	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-
-	result, err := config.DB.Exec(query, uid, req.Company, req.Title, req.Date, req.StartTime, req.EndTime, req.Description, req.CreatedFromMailID)
-	if err != nil {
+	record := models.Event{UserID: uid, CompanyName: req.Company, EventTitle: req.Title, EventDate: req.Date, StartTime: req.StartTime, EndTime: req.EndTime, Description: req.Description, CreatedFromMailID: req.CreatedFromMailID}
+	if err := config.DB.Create(&record).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "イベントの作成に失敗しました: " + err.Error()})
 		return
 	}
-
-	lastID, _ := result.LastInsertId()
-	c.JSON(http.StatusCreated, gin.H{
-		"id":      lastID,
-		"message": "イベントが正常に作成されました",
-	})
+	c.JSON(http.StatusCreated, gin.H{"id": record.ID, "message": "イベントが正常に作成されました"})
 }
 
 // ==========================================
@@ -380,11 +338,6 @@ func UpdateEventHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if _, _, err := resolveUserAccessToken(c); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
-		return
-	}
-
 	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -395,14 +348,18 @@ func UpdateEventHandler(c *gin.Context) {
 		return
 	}
 
-	result, err := config.DB.Exec(`UPDATE events
-		SET company_name = ?, event_title = ?, event_date = ?, start_time = ?, end_time = ?, description = ?
-		WHERE id = ? AND user_id = ?`, req.Company, req.Title, req.Date, req.StartTime, req.EndTime, req.Description, c.Param("id"), uid)
+	eventID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "イベントIDの形式が不正です"})
+		return
+	}
+	result := config.DB.Model(&models.Event{}).Where("id = ? AND user_id = ?", eventID, uid).
+		Updates(map[string]interface{}{"company_name": req.Company, "event_title": req.Title, "event_date": req.Date, "start_time": req.StartTime, "end_time": req.EndTime, "description": req.Description})
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "イベントの更新に失敗しました: " + err.Error()})
 		return
 	}
-	if count, _ := result.RowsAffected(); count == 0 {
+	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "イベントが見つかりません"})
 		return
 	}
@@ -415,27 +372,24 @@ func UpdateEventHandler(c *gin.Context) {
 func DeleteEventHandler(c *gin.Context) {
 	eventID := c.Param("id")
 
-	_, _, err := resolveUserAccessToken(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
-		return
-	}
-
 	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	query := "DELETE FROM events WHERE id = ? AND user_id = ?"
-	result, err := config.DB.Exec(query, eventID, uid)
+	id, err := uuid.Parse(eventID)
 	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "イベントIDの形式が不正です"})
+		return
+	}
+	result := config.DB.Where("id = ? AND user_id = ?", id, uid).Delete(&models.Event{})
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "イベント削除に失敗しました"})
 		return
 	}
 
-	rowsAffected, _ := result.RowsAffected()
-	if rowsAffected == 0 {
+	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "イベントが見つかりません"})
 		return
 	}

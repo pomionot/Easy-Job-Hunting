@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func TestGetRoadmapUserID(t *testing.T) {
@@ -16,14 +17,15 @@ func TestGetRoadmapUserID(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 		req, _ := http.NewRequest("GET", "/api/companies/1/roadmap", nil)
 		c.Request = req
-		c.Set("userID", int64(42))
+		expectedID := uuid.New()
+		c.Set("userID", expectedID)
 
 		uid, err := getRoadmapUserID(c)
 		if err != nil {
 			t.Fatalf("予期せぬエラー: %v", err)
 		}
-		if uid != 42 {
-			t.Fatalf("期待値 42, 実際: %d", uid)
+		if uid != expectedID {
+			t.Fatalf("期待値 %s, 実際: %s", expectedID, uid)
 		}
 	})
 
@@ -42,10 +44,10 @@ func TestGetRoadmapUserID(t *testing.T) {
 
 func TestRoadmapProgressCalculation(t *testing.T) {
 	steps := []RoadmapStep{
-		{ID: 1, Title: "企業研究", Status: "completed", NextAction: "競合調査"},
-		{ID: 2, Title: "ES提出", Status: "completed", NextAction: "志望動機推敲"},
-		{ID: 3, Title: "一次面接", Status: "current", NextAction: "自己PR練習"},
-		{ID: 4, Title: "二次面接", Status: "pending", NextAction: "深掘り対策"},
+		{ID: uuid.New(), Title: "企業研究", Status: "completed", NextAction: "競合調査"},
+		{ID: uuid.New(), Title: "ES提出", Status: "completed", NextAction: "志望動機推敲"},
+		{ID: uuid.New(), Title: "一次面接", Status: "current", NextAction: "自己PR練習"},
+		{ID: uuid.New(), Title: "二次面接", Status: "pending", NextAction: "深掘り対策"},
 	}
 
 	total := len(steps)

@@ -3,23 +3,25 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"Easy-Job-Hunting/auth"
 	"Easy-Job-Hunting/config"
 	"Easy-Job-Hunting/handlers"
 	"Easy-Job-Hunting/middleware"
+	"Easy-Job-Hunting/models"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 )
 
 func envOrDefault(key, fallback string) string {
@@ -37,7 +39,11 @@ func main() {
 		log.Println("Error loading .env file")
 	}
 	config.InitDB()
-	defer config.DB.Close()
+	sqlDB, err := config.DB.DB()
+	if err != nil {
+		log.Fatal("データベース接続の取得に失敗しました: ", err)
+	}
+	defer sqlDB.Close()
 	if err := auth.InitOauth(); err != nil {
 		log.Fatal("OAuth設定の初期化に失敗しました: ", err)
 	}
@@ -124,35 +130,30 @@ func main() {
 			return
 		}
 
-		insertQuery := `
-			INSERT INTO users (email, access_token, refresh_token, expiry)
-			VALUES (?, ?, ?, ?)
-			ON DUPLICATE KEY UPDATE
-			access_token = VALUES(access_token),
-			refresh_token = VALUES(refresh_token),
-			expiry = VALUES(expiry);
-		`
-		_, err = config.DB.Exec(insertQuery, loginEmail, token.AccessToken, token.RefreshToken, token.Expiry)
-		if err != nil {
+		var user models.User
+		err = config.DB.Where("email = ?", loginEmail).First(&user).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			user = models.User{Email: loginEmail}
+		} else if err != nil {
+			c.JSON(500, gin.H{"error": "データベースへの保存に失敗しました: " + err.Error()})
+			return
+		}
+		user.AccessToken = token.AccessToken
+		user.RefreshToken = token.RefreshToken
+		user.Expiry = &token.Expiry
+		if err := config.DB.Save(&user).Error; err != nil {
 			c.JSON(500, gin.H{"error": "データベースへの保存に失敗しました: " + err.Error()})
 			return
 		}
 
-		var userID int64
-		err = config.DB.QueryRow("SELECT id FROM users WHERE email = ?", loginEmail).Scan(&userID)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "ユーザーIDの取得に失敗しました: " + err.Error()})
-			return
-		}
-
 		session := sessions.Default(c)
-		session.Set(middleware.UserIDSessionKey, strconv.FormatInt(userID, 10))
+		session.Set(middleware.UserIDSessionKey, user.ID.String())
 		if err := session.Save(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "セッションの保存に失敗しました: " + err.Error()})
 			return
 		}
 
-		redirectURL := fmt.Sprintf("%s/?login=success&uid=%d&email=%s", frontEndURL, userID, url.QueryEscape(loginEmail))
+		redirectURL := fmt.Sprintf("%s/?login=success&uid=%s&email=%s", frontEndURL, user.ID.String(), url.QueryEscape(loginEmail))
 		c.Redirect(303, redirectURL)
 	})
 

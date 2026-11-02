@@ -1,24 +1,15 @@
 package handlers
 
 import (
-	"Easy-Job-Hunting/config"
 	"net/http"
+
+	"Easy-Job-Hunting/config"
+	"Easy-Job-Hunting/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-// 既存の CompanyRequest 構造体に Status を追加
 type CompanyRequest struct {
-	CompanyName  string `json:"company_name"`
-	Industry     string `json:"industry"`
-	BusinessType string `json:"business_type"`
-	HomepageURL  string `json:"homepage_url"`
-	Status       string `json:"status"` // 👈 これを追加
-}
-
-// CompanyResponse フロントに返す企業情報の構造
-type CompanyResponse struct {
-	ID           int    `json:"id"`
 	CompanyName  string `json:"company_name"`
 	Industry     string `json:"industry"`
 	BusinessType string `json:"business_type"`
@@ -26,105 +17,84 @@ type CompanyResponse struct {
 	Status       string `json:"status"`
 }
 
-// GetCompaniesHandler 企業一覧取得API (GET)
+type CompanyResponse struct {
+	ID           string `json:"id"`
+	CompanyName  string `json:"company_name"`
+	Industry     string `json:"industry"`
+	BusinessType string `json:"business_type"`
+	HomepageURL  string `json:"homepage_url"`
+	Status       string `json:"status"`
+}
+
 func GetCompaniesHandler(c *gin.Context) {
 	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
-
-	// 🔑 ログインユーザーの企業情報を取得
-	query := `
-		SELECT id, company_name, industry, business_type, homepage_url, status 
-		FROM companies 
-		WHERE user_id = ? 
-		ORDER BY id DESC;
-	`
-	rows, err := config.DB.Query(query, uid)
-	if err != nil {
+	var companies []models.Company
+	if err := config.DB.Where("user_id = ?", uid).Order("id DESC").Find(&companies).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "企業情報の取得に失敗しました: " + err.Error()})
 		return
 	}
-	defer rows.Close()
-
-	var companies []CompanyResponse
-	for rows.Next() {
-		var comp CompanyResponse
-		err := rows.Scan(&comp.ID, &comp.CompanyName, &comp.Industry, &comp.BusinessType, &comp.HomepageURL, &comp.Status)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "データのマッピングに失敗しました"})
-			return
-		}
-		companies = append(companies, comp)
+	response := make([]CompanyResponse, 0, len(companies))
+	for _, company := range companies {
+		response = append(response, CompanyResponse{
+			ID: company.ID.String(), CompanyName: company.CompanyName, Industry: company.Industry,
+			BusinessType: company.BusinessType, HomepageURL: company.HomepageURL, Status: company.Status,
+		})
 	}
-
-	if companies == nil {
-		companies = []CompanyResponse{}
-	}
-
-	c.JSON(http.StatusOK, companies)
+	c.JSON(http.StatusOK, response)
 }
 
-// RegisterCompanyHandler 企業情報登録API (POST)
 func RegisterCompanyHandler(c *gin.Context) {
 	var req CompanyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストの解析に失敗しました"})
 		return
 	}
-
 	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
-
 	if req.CompanyName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "企業名は必須です"})
 		return
 	}
-
-	query := `
-		INSERT INTO companies (user_id, company_name, industry, business_type, homepage_url, status)
-		VALUES (?, ?, ?, ?, ?, ?);
-	`
-	_, err = config.DB.Exec(query, uid, req.CompanyName, req.Industry, req.BusinessType, req.HomepageURL, "検討中")
-	if err != nil {
+	company := models.Company{
+		UserID: uid, CompanyName: req.CompanyName, Industry: req.Industry,
+		BusinessType: req.BusinessType, HomepageURL: req.HomepageURL, Status: "検討中",
+	}
+	if err := config.DB.Create(&company).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "企業情報の保存に失敗しました: " + err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "企業情報を正常に登録しました！"})
+	c.JSON(http.StatusOK, gin.H{"message": "企業情報を正常に登録しました！", "id": company.ID})
 }
 
-// UpdateCompanyStatusHandler 選考ステータス更新API (PUT)
 func UpdateCompanyStatusHandler(c *gin.Context) {
 	var req struct {
-		ID     int    `json:"id"`
+		ID     string `json:"id"`
 		Status string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストの解析に失敗しました"})
 		return
 	}
-
 	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
-
-	query := "UPDATE companies SET status = ? WHERE id = ? AND user_id = ?;"
-	result, err := config.DB.Exec(query, req.Status, req.ID, uid)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ステータスの更新に失敗しました: " + err.Error()})
+	result := config.DB.Model(&models.Company{}).Where("id = ? AND user_id = ?", req.ID, uid).Update("status", req.Status)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ステータスの更新に失敗しました: " + result.Error.Error()})
 		return
 	}
-	if count, _ := result.RowsAffected(); count == 0 {
+	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "企業が見つかりません"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "ステータスを更新しました！"})
 }

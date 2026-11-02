@@ -2,32 +2,28 @@ package handlers
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
-func authenticatedUserID(c *gin.Context) (int64, error) {
+func authenticatedUserID(c *gin.Context) (uuid.UUID, error) {
 	value, exists := c.Get("userID")
 	if !exists {
-		return 0, fmt.Errorf("認証済みユーザーIDがありません")
+		return uuid.Nil, fmt.Errorf("認証済みユーザーIDがありません")
 	}
 
 	switch userID := value.(type) {
-	case int64:
-		if userID > 0 {
+	case uuid.UUID:
+		if userID != uuid.Nil {
 			return userID, nil
 		}
-	case int:
-		if userID > 0 {
-			return int64(userID), nil
-		}
 	case string:
-		parsed, err := strconv.ParseInt(userID, 10, 64)
-		if err == nil && parsed > 0 {
+		parsed, err := uuid.Parse(userID)
+		if err == nil && parsed != uuid.Nil {
 			return parsed, nil
 		}
 	}
 
-	return 0, fmt.Errorf("認証済みユーザーIDが不正です")
+	return uuid.Nil, fmt.Errorf("認証済みユーザーIDが不正です")
 }
