@@ -87,20 +87,6 @@ export default function MailList() {
     }
   }, [auth.uid, auth.email]);
 
-  useEffect(() => {
-    console.log("🔥 [TEST] MailListがマウントされました！");
-
-    const reloadKey = "forced_reload_done";
-    const hasReloaded = sessionStorage.getItem(reloadKey);
-    if (!hasReloaded) {
-      console.log("🚀 [TEST] 強制リロードを実行します！");
-      sessionStorage.setItem(reloadKey, "true");
-      window.location.reload();
-    } else {
-      console.log("✅ [TEST] すでにリロード済みです。");
-    }
-  }, []);
-
   // 2. メールをクリックしたときに詳細（本文）を取得
   const handleMailClick = (id) => {
     setDetailLoading(true);
