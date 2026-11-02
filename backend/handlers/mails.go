@@ -87,6 +87,7 @@ func GetMailsHandler(c *gin.Context) {
 	for _, m := range res.Messages {
 		msg, err := srv.Users.Messages.Get("me", m.Id).Format("metadata").MetadataHeaders("Subject", "From", "Date").Do()
 		if err != nil {
+			log.Printf("[ERROR] Failed to get message %s: %v", m.Id, err)
 			continue
 		}
 		var subject, from, date string
@@ -100,6 +101,7 @@ func GetMailsHandler(c *gin.Context) {
 				date = h.Value
 			}
 		}
+		log.Printf("[DEBUG] Mail found -> ID: %s, Subject: %s", m.Id, subject)
 		mails = append(mails, MailSummary{ID: m.Id, Subject: subject, From: from, Date: date, Snippet: msg.Snippet})
 	}
 	_ = userRef
