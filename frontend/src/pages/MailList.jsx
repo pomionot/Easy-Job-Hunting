@@ -16,7 +16,10 @@ function normalizeMailResponse(data) {
 
 export default function MailList() {
   const [mails, setMails] = useState([]);
-  const [auth, setAuth] = useState({ uid: "", email: "" });
+  const [auth] = useState(() => ({
+    uid: localStorage.getItem("login_user_uid") || "",
+    email: localStorage.getItem("login_user_email") || "",
+  }));
   const [nextPageToken, setNextPageToken] = useState("");
   const [selectedMail, setSelectedMail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,16 +73,6 @@ export default function MailList() {
         setRefreshing(false);
       });
   };
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setAuth({
-        uid: localStorage.getItem("login_user_uid") || "",
-        email: localStorage.getItem("login_user_email") || "",
-      });
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (auth.uid || auth.email) {
