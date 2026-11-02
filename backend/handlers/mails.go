@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/base64"
+	"log"
 	"net/http"
 	"strings"
 
@@ -64,6 +65,7 @@ func GetMailsHandler(c *gin.Context) {
 		return
 	}
 	query := config.BuildGmailQuery(includeEmails, excludeEmails)
+	log.Printf("[DEBUG] Generated Gmail Query: %s", query)
 	res, err := srv.Users.Messages.List("me").Q(query).MaxResults(10).Do()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gmail APIの呼び出し失敗", "details": err.Error()})
