@@ -11,3 +11,7 @@ frontend/dist/
 
 # Go build output
 backend/easy-job-hunting
+
+# DB Backups
+db_backups/
+*.sql
