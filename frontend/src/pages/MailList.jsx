@@ -10,6 +10,7 @@ export default function MailList() {
   const [selectedMail, setSelectedMail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const userUid = localStorage.getItem("login_user_uid") || "";
@@ -29,6 +30,11 @@ export default function MailList() {
     const pageQuery = pageToken ? `${separator}pageToken=${encodeURIComponent(pageToken)}` : "";
     fetch(`/api/fetch-mails${userQuery}${pageQuery}`)
       .then((res) => {
+        if (!res.ok) {
+          return res.json().then((data) => {
+            throw new Error(data?.error || "メール一覧の取得に失敗しました");
+          });
+        }
         // デバッグ用：本当にJSONが返ってきているか、中身のタイプをチェック
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
@@ -45,11 +51,13 @@ export default function MailList() {
         }
         setMails((current) => (pageToken ? [...current, ...pageMails] : pageMails));
         setNextPageToken(Array.isArray(data) ? "" : data.nextPageToken || "");
+        setError("");
         setLoading(false);
         setRefreshing(false);
       })
       .catch((err) => {
         console.error("メール一覧の取得に失敗:", err);
+        setError(err.message || "メール一覧の取得に失敗しました");
         setLoading(false);
         setRefreshing(false);
       });
@@ -140,7 +148,9 @@ export default function MailList() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {mails.length === 0 ? (
+              {error ? (
+                <div className="p-6 text-sm text-red-600">{error}</div>
+              ) : mails.length === 0 ? (
                 <div className="p-6 text-sm text-gray-500">
                   重要な就活メールは現在ありません。メルマガは綺麗に弾かれています！
                 </div>
