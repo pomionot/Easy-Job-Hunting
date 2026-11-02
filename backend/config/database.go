@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"Easy-Job-Hunting/models"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -29,6 +31,17 @@ func InitDB() {
 	}
 	if err := sqlDB.Ping(); err != nil {
 		log.Fatal("MySQLに接続できませんでした。Dockerコンテナが起動しているか確認してください: ", err)
+	}
+
+	if err := DB.AutoMigrate(
+		&models.User{},
+		&models.Profile{},
+		&models.Company{},
+		&models.Event{},
+		&models.MailFilterEntry{},
+		&models.CompanyRoadmapStep{},
+	); err != nil {
+		log.Fatal("GORMのマイグレーションに失敗しました: ", err)
 	}
 
 	fmt.Println("MySQLへのGORM接続に成功しました。")
