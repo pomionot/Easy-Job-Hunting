@@ -5,16 +5,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Link } from "react-router-dom";
 import AppSidebar from "./components/AppSidebar";
-
-function normalizeMailResponse(data) {
-  if (Array.isArray(data)) {
-    return data;
-  }
-  if (data && Array.isArray(data.mails)) {
-    return data.mails;
-  }
-  throw new Error(data?.error || "メールデータの形式が不正です");
-}
+import { normalizeMailResponse } from "./utils/mailResponse";
 
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -103,7 +94,7 @@ export default function Dashboard() {
         });
       })
       .then((data) => {
-        const pageMails = normalizeMailResponse(data);
+        const pageMails = normalizeMailResponse(data).mails;
         console.debug("[DEBUG] Mail API response:", pageMails);
         setMails(pageMails.slice(0, 5));
         setErrorMail("");

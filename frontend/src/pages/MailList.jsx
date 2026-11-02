@@ -3,16 +3,7 @@ import { Link } from "react-router-dom";
 import MaterialIcon from "../components/MaterialIcon";
 import EventExtractModal from "../components/EventExtractModal";
 import AppSidebar from "../components/AppSidebar";
-
-function normalizeMailResponse(data) {
-  if (Array.isArray(data)) {
-    return { mails: data, nextPageToken: "" };
-  }
-  if (data && Array.isArray(data.mails)) {
-    return { mails: data.mails, nextPageToken: data.nextPageToken || "" };
-  }
-  throw new Error(data?.error || "メール一覧の形式が正しくありません");
-}
+import { normalizeMailResponse } from "../utils/mailResponse";
 
 export default function MailList() {
   const [mails, setMails] = useState([]);

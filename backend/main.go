@@ -32,6 +32,17 @@ func envOrDefault(key, fallback string) string {
 	return value
 }
 
+func logoutHandler(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Options(sessions.Options{Path: "/", MaxAge: -1})
+	if err := session.Save(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ログアウトに失敗しました: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
+}
+
 func main() {
 	// 各種初期化処理の呼び出し
 	err := godotenv.Load()
@@ -159,6 +170,7 @@ func main() {
 
 	// 各種APIエンドポイントを外部ハンドラーにマッピング
 	api := r.Group("/api", middleware.AuthRequired)
+	api.POST("/logout", logoutHandler)
 	api.GET("/events", handlers.GetEventsHandler)
 	api.POST("/events", handlers.CreateEventHandler)
 	api.PUT("/events/:id", handlers.UpdateEventHandler)

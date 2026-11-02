@@ -10,6 +10,20 @@ const navItems = [
 ];
 
 export default function AppSidebar({ activePath }) {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (error) {
+      console.error("ログアウトAPIの呼び出しに失敗しました:", error);
+    } finally {
+      localStorage.removeItem("login_user_uid");
+      localStorage.removeItem("login_user_email");
+      sessionStorage.removeItem("forced_reload_done");
+      sessionStorage.removeItem("mail_list_reloaded");
+      window.location.replace("/");
+    }
+  };
+
   return (
     <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
       <div className="h-16 flex items-center px-6 border-b border-gray-100">
@@ -30,6 +44,16 @@ export default function AppSidebar({ activePath }) {
           </Link>
         ))}
       </nav>
+      <div className="border-t border-gray-100 p-4">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
+        >
+          <i className="fa-solid fa-right-from-bracket w-5" aria-hidden="true" />
+          ログアウト
+        </button>
+      </div>
     </aside>
   );
 }
