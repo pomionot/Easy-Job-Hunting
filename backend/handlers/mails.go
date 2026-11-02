@@ -77,9 +77,11 @@ func GetMailsHandler(c *gin.Context) {
 	}
 	res, err := request.Do()
 	if err != nil {
+		log.Printf("[ERROR] Gmail API Error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gmail APIの呼び出し失敗", "details": err.Error()})
 		return
 	}
+	log.Printf("[DEBUG] Fetched message count: %d", len(res.Messages))
 	mails := make([]MailSummary, 0)
 	for _, m := range res.Messages {
 		msg, err := srv.Users.Messages.Get("me", m.Id).Format("metadata").MetadataHeaders("Subject", "From", "Date").Do()
