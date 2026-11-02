@@ -6,6 +6,7 @@ import AppSidebar from "../components/AppSidebar";
 
 export default function MailList() {
   const [mails, setMails] = useState([]);
+  const [nextPageToken, setNextPageToken] = useState("");
   const [selectedMail, setSelectedMail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -15,7 +16,7 @@ export default function MailList() {
   const userEmail = localStorage.getItem("login_user_email") || "";
 
   // 1. フィルターされたメール一覧をバックエンドから取得
-  const loadMails = (showLoading = false) => {
+  const loadMails = (showLoading = false, pageToken = "") => {
     const userQuery = userUid
       ? `?uid=${encodeURIComponent(userUid)}`
       : userEmail
@@ -24,7 +25,9 @@ export default function MailList() {
 
     setLoading(showLoading);
     setRefreshing(!showLoading);
-    fetch(`/api/fetch-mails${userQuery}`)
+    const separator = userQuery ? "&" : "?";
+    const pageQuery = pageToken ? `${separator}pageToken=${encodeURIComponent(pageToken)}` : "";
+    fetch(`/api/fetch-mails${userQuery}${pageQuery}`)
       .then((res) => {
         // デバッグ用：本当にJSONが返ってきているか、中身のタイプをチェック
         const contentType = res.headers.get("content-type");
@@ -36,10 +39,11 @@ export default function MailList() {
         return res.json();
       })
       .then((data) => {
-        if (!Array.isArray(data)) {
+        if (!data || !Array.isArray(data.mails)) {
           throw new Error(data?.error || "メール一覧の形式が正しくありません");
         }
-        setMails(data);
+        setMails((current) => (pageToken ? [...current, ...data.mails] : data.mails));
+        setNextPageToken(data.nextPageToken || "");
         setLoading(false);
         setRefreshing(false);
       })
@@ -165,6 +169,16 @@ export default function MailList() {
                 ))
               )}
             </div>
+            {nextPageToken && (
+              <button
+                type="button"
+                onClick={() => loadMails(false, nextPageToken)}
+                disabled={refreshing}
+                className="shrink-0 border-t border-gray-100 p-3 text-sm font-semibold text-orange-600 hover:bg-orange-50 disabled:opacity-50"
+              >
+                {refreshing ? "読み込み中..." : "さらに読み込む"}
+              </button>
+            )}
           </section>
 
           <section className="w-full md:flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden relative min-h-[32rem] md:min-h-0">

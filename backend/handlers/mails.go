@@ -44,6 +44,11 @@ type MailDetail struct {
 	Body    string `json:"body"`
 }
 
+type MailListResponse struct {
+	Mails         []MailSummary `json:"mails"`
+	NextPageToken string        `json:"nextPageToken,omitempty"`
+}
+
 func GetMailsHandler(c *gin.Context) {
 	ctx := context.Background()
 	accessToken, userRef, err := resolveUserAccessToken(c)
@@ -66,7 +71,11 @@ func GetMailsHandler(c *gin.Context) {
 	}
 	query := config.BuildGmailQuery(includeEmails, excludeEmails)
 	log.Printf("[DEBUG] Generated Gmail Query: %s", query)
-	res, err := srv.Users.Messages.List("me").Q(query).MaxResults(10).Do()
+	request := srv.Users.Messages.List("me").Q(query).MaxResults(10)
+	if pageToken := strings.TrimSpace(c.Query("pageToken")); pageToken != "" {
+		request = request.PageToken(pageToken)
+	}
+	res, err := request.Do()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gmail APIの呼び出し失敗", "details": err.Error()})
 		return
@@ -91,7 +100,7 @@ func GetMailsHandler(c *gin.Context) {
 		mails = append(mails, MailSummary{ID: m.Id, Subject: subject, From: from, Date: date, Snippet: msg.Snippet})
 	}
 	_ = userRef
-	c.JSON(http.StatusOK, mails)
+	c.JSON(http.StatusOK, MailListResponse{Mails: mails, NextPageToken: res.NextPageToken})
 }
 
 func HandleFetchMails(c *gin.Context) { GetMailsHandler(c) }
