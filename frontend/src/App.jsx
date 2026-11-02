@@ -20,6 +20,10 @@ function initializeAuth() {
     localStorage.setItem("login_user_email", email);
   }
 
+  if (uid || email || params.get("login") === "success") {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   return {
     isLoggedIn: params.get("login") === "success" ||
       Boolean(localStorage.getItem("login_user_uid")),
@@ -153,10 +157,22 @@ export default function App() {
             isLoggedIn ? <CompanyRegister /> : <Navigate to="/" replace />
           }
         />
-        <Route path="/mails" element={<MailList />} />
-        <Route path="/mail-filters" element={<MailFilterSettings />} />
-        <Route path="/company-list" element={<CompanyList />} />
-        <Route path="/roadmap" element={<CompanyRoadmap />} />
+        <Route
+          path="/mails"
+          element={isLoggedIn ? <MailList /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/mail-filters"
+          element={isLoggedIn ? <MailFilterSettings /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/company-list"
+          element={isLoggedIn ? <CompanyList /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/roadmap"
+          element={isLoggedIn ? <CompanyRoadmap /> : <Navigate to="/" replace />}
+        />
       </Routes>
     </BrowserRouter>
   );
