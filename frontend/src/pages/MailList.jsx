@@ -23,11 +23,17 @@ export default function MailList() {
   const [error, setError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const userUid = localStorage.getItem("login_user_uid") || "";
-  const userEmail = localStorage.getItem("login_user_email") || "";
-
   // 1. フィルターされたメール一覧をバックエンドから取得
   const loadMails = (showLoading = false, pageToken = "") => {
+    const userUid = localStorage.getItem("login_user_uid") || "";
+    const userEmail = localStorage.getItem("login_user_email") || "";
+    if (!userUid && !userEmail) {
+      setError("ログイン情報を確認できません。ログイン後に再度お試しください。");
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     const userQuery = userUid
       ? `?uid=${encodeURIComponent(userUid)}`
       : userEmail
@@ -80,6 +86,8 @@ export default function MailList() {
     setDetailLoading(true);
     setSelectedMail({ id }); // 先にIDだけ入れて枠を表示しておく
 
+    const userUid = localStorage.getItem("login_user_uid") || "";
+    const userEmail = localStorage.getItem("login_user_email") || "";
     const userQuery = userUid
       ? `?uid=${encodeURIComponent(userUid)}`
       : userEmail
