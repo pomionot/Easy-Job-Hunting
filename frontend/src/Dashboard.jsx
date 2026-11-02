@@ -89,10 +89,11 @@ export default function Dashboard() {
         return res.json();
       })
       .then((data) => {
-        if (!data || !Array.isArray(data.mails)) {
+        const pageMails = Array.isArray(data) ? data : data?.mails;
+        if (!Array.isArray(pageMails)) {
           throw new Error(data?.error || "メールデータの形式が不正です");
         }
-        setMails(data.mails.slice(0, 5));
+        setMails(pageMails.slice(0, 5));
         setLoadingMails(false);
       })
       .catch((err) => {

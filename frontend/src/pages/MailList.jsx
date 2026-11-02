@@ -39,11 +39,12 @@ export default function MailList() {
         return res.json();
       })
       .then((data) => {
-        if (!data || !Array.isArray(data.mails)) {
+        const pageMails = Array.isArray(data) ? data : data?.mails;
+        if (!Array.isArray(pageMails)) {
           throw new Error(data?.error || "メール一覧の形式が正しくありません");
         }
-        setMails((current) => (pageToken ? [...current, ...data.mails] : data.mails));
-        setNextPageToken(data.nextPageToken || "");
+        setMails((current) => (pageToken ? [...current, ...pageMails] : pageMails));
+        setNextPageToken(Array.isArray(data) ? "" : data.nextPageToken || "");
         setLoading(false);
         setRefreshing(false);
       })
