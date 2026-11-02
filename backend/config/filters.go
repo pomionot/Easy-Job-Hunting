@@ -56,17 +56,21 @@ func normalizeEmailList(values []string) []string {
 }
 
 func BuildGmailQuery(includeEmails, excludeEmails []string) string {
-	normalizedIncludeEmails := normalizeEmailList(includeEmails)
 	var parts []string
-	var orTerms []string
-	orTerms = append(orTerms, IncludeKeywords...)
-	for _, email := range normalizedIncludeEmails {
-		orTerms = append(orTerms, "from:"+email)
+
+	// Gmail treats terms inside braces as OR. Put keywords and include
+	// senders in the same group so either condition can match independently.
+	var matchTerms []string
+	for _, keyword := range IncludeKeywords {
+		if keyword = strings.TrimSpace(keyword); keyword != "" {
+			matchTerms = append(matchTerms, keyword)
+		}
 	}
-	if len(orTerms) > 0 {
-		// Gmail's braces are an explicit OR group. This ensures include
-		// senders are added to keyword matches instead of narrowing them.
-		parts = append(parts, "{"+strings.Join(orTerms, " ")+"}")
+	for _, email := range normalizeEmailList(includeEmails) {
+		matchTerms = append(matchTerms, "from:"+email)
+	}
+	if len(matchTerms) > 0 {
+		parts = append(parts, "{"+strings.Join(matchTerms, " ")+"}")
 	}
 
 	for _, ex := range ExcludeKeywords {

@@ -28,10 +28,11 @@ func TestBuildGmailQueryIncludesAndExcludesSenders(t *testing.T) {
 }
 
 func TestBuildGmailQueryIncludeSenderBypassesKeywords(t *testing.T) {
-	query := BuildGmailQuery([]string{"recruit@example.com"}, nil)
+	query := BuildGmailQuery([]string{"recruit@example.com", "hr@example.com"}, nil)
 
-	if !strings.Contains(query, "{面接 選考 インターン 説明会 書類選考 from:recruit@example.com}") {
-		t.Fatalf("必ず含める送信者がキーワード条件とORになっていません: %s", query)
+	expected := "{面接 選考 インターン 説明会 書類選考 from:recruit@example.com from:hr@example.com}"
+	if !strings.Contains(query, expected) {
+		t.Fatalf("キーワード条件と必ず含める送信者条件が同じORグループにありません: %s", query)
 	}
 }
 
