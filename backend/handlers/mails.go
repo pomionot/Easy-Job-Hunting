@@ -62,6 +62,7 @@ func GetMailsHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールフィルターの取得に失敗しました: " + err.Error()})
 		return
 	}
+	log.Printf("[DEBUG] Loaded mail filters: include=%v exclude=%v", includeEmails, excludeEmails)
 	token := &oauth2.Token{AccessToken: accessToken}
 	client := oauth2.NewClient(ctx, oauth2.StaticTokenSource(token))
 	srv, err := gmail.NewService(ctx, option.WithHTTPClient(client))
