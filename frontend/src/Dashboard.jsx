@@ -6,6 +6,16 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { Link } from "react-router-dom";
 import AppSidebar from "./components/AppSidebar";
 
+function normalizeMailResponse(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (data && Array.isArray(data.mails)) {
+    return data.mails;
+  }
+  throw new Error(data?.error || "メールデータの形式が不正です");
+}
+
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [mails, setMails] = useState([]);
@@ -93,11 +103,10 @@ export default function Dashboard() {
         });
       })
       .then((data) => {
-        const pageMails = Array.isArray(data) ? data : data?.mails;
-        if (!Array.isArray(pageMails)) {
-          throw new Error(data?.error || "メールデータの形式が不正です");
-        }
+        const pageMails = normalizeMailResponse(data);
+        console.debug("[DEBUG] Mail API response:", pageMails);
         setMails(pageMails.slice(0, 5));
+        setErrorMail("");
         setLoadingMails(false);
       })
       .catch((err) => {

@@ -4,6 +4,16 @@ import MaterialIcon from "../components/MaterialIcon";
 import EventExtractModal from "../components/EventExtractModal";
 import AppSidebar from "../components/AppSidebar";
 
+function normalizeMailResponse(data) {
+  if (Array.isArray(data)) {
+    return { mails: data, nextPageToken: "" };
+  }
+  if (data && Array.isArray(data.mails)) {
+    return { mails: data.mails, nextPageToken: data.nextPageToken || "" };
+  }
+  throw new Error(data?.error || "メール一覧の形式が正しくありません");
+}
+
 export default function MailList() {
   const [mails, setMails] = useState([]);
   const [nextPageToken, setNextPageToken] = useState("");
@@ -45,12 +55,10 @@ export default function MailList() {
         return res.json();
       })
       .then((data) => {
-        const pageMails = Array.isArray(data) ? data : data?.mails;
-        if (!Array.isArray(pageMails)) {
-          throw new Error(data?.error || "メール一覧の形式が正しくありません");
-        }
-        setMails((current) => (pageToken ? [...current, ...pageMails] : pageMails));
-        setNextPageToken(Array.isArray(data) ? "" : data.nextPageToken || "");
+        const page = normalizeMailResponse(data);
+        console.debug("[DEBUG] Mail API response:", page);
+        setMails((current) => (pageToken ? [...current, ...page.mails] : page.mails));
+        setNextPageToken(page.nextPageToken);
         setError("");
         setLoading(false);
         setRefreshing(false);
@@ -164,10 +172,10 @@ export default function MailList() {
                   >
                     <div className="flex justify-between items-start mb-1 gap-2">
                       <span className="text-sm font-bold text-gray-800 truncate pr-2">
-                        {mail.from.split("<")[0].trim()}
+                        {(mail.from || "").split("<")[0].trim()}
                       </span>
                       <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {mail.date.substring(0, 16)}
+                        {(mail.date || "").substring(0, 16)}
                       </span>
                     </div>
                     <h3 className="text-sm font-bold text-gray-900 mb-1 line-clamp-1">
