@@ -16,6 +16,7 @@ function normalizeMailResponse(data) {
 
 export default function MailList() {
   const [mails, setMails] = useState([]);
+  const [auth, setAuth] = useState({ uid: "", email: "" });
   const [nextPageToken, setNextPageToken] = useState("");
   const [selectedMail, setSelectedMail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,20 +26,13 @@ export default function MailList() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   // 1. フィルターされたメール一覧をバックエンドから取得
   const loadMails = (showLoading = false, pageToken = "") => {
-    const userUid = localStorage.getItem("login_user_uid") || "";
-    const userEmail = localStorage.getItem("login_user_email") || "";
-    if (!userUid && !userEmail) {
-      setError("ログイン情報を確認できません。ログイン後に再度お試しください。");
-      setLoading(false);
-      setRefreshing(false);
+    if (!auth.uid && !auth.email) {
       return;
     }
 
-    const userQuery = userUid
-      ? `?uid=${encodeURIComponent(userUid)}`
-      : userEmail
-        ? `?email=${encodeURIComponent(userEmail)}`
-        : "";
+    const userQuery = auth.uid
+      ? `?uid=${encodeURIComponent(auth.uid)}`
+      : `?email=${encodeURIComponent(auth.email)}`;
 
     setLoading(showLoading);
     setRefreshing(!showLoading);
@@ -78,20 +72,30 @@ export default function MailList() {
   };
 
   useEffect(() => {
-    loadMails(true);
+    const timer = window.setTimeout(() => {
+      setAuth({
+        uid: localStorage.getItem("login_user_uid") || "",
+        email: localStorage.getItem("login_user_email") || "",
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (auth.uid || auth.email) {
+      loadMails(true);
+    }
+  }, [auth.uid, auth.email]);
 
   // 2. メールをクリックしたときに詳細（本文）を取得
   const handleMailClick = (id) => {
     setDetailLoading(true);
     setSelectedMail({ id }); // 先にIDだけ入れて枠を表示しておく
 
-    const userUid = localStorage.getItem("login_user_uid") || "";
-    const userEmail = localStorage.getItem("login_user_email") || "";
-    const userQuery = userUid
-      ? `?uid=${encodeURIComponent(userUid)}`
-      : userEmail
-        ? `?email=${encodeURIComponent(userEmail)}`
+    const userQuery = auth.uid
+      ? `?uid=${encodeURIComponent(auth.uid)}`
+      : auth.email
+        ? `?email=${encodeURIComponent(auth.email)}`
         : "";
 
     fetch(`/api/mails/${id}${userQuery}`)
