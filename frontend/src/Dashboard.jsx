@@ -85,8 +85,12 @@ export default function Dashboard() {
             "ログインセッションが切れているか、未ログイン状態です。トップ画面から再度ログインを試してください。",
           );
         }
-        if (!res.ok) throw new Error("メールデータの取得に失敗しました");
-        return res.json();
+        return res.json().then((data) => {
+          if (!res.ok) {
+            throw new Error(data?.error || "メールデータの取得に失敗しました");
+          }
+          return data;
+        });
       })
       .then((data) => {
         const pageMails = Array.isArray(data) ? data : data?.mails;

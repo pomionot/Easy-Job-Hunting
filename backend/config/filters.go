@@ -65,7 +65,7 @@ func BuildGmailQuery(includeEmails, excludeEmails []string) string {
 
 	var keywordQuery string
 	if len(keywordTerms) > 0 {
-		keywordQuery = "{" + strings.Join(keywordTerms, " ") + "}"
+		keywordQuery = "(" + strings.Join(keywordTerms, " OR ") + ")"
 		for _, keyword := range ExcludeKeywords {
 			keyword = strings.TrimSpace(keyword)
 			if keyword != "" {
@@ -83,13 +83,13 @@ func BuildGmailQuery(includeEmails, excludeEmails []string) string {
 		}
 		// Included senders bypass keyword exclusions. Excluded senders are
 		// appended below so they remain excluded from every branch.
-		parts = append(parts, "({"+strings.Join(includeTerms, " ")+"} OR ("+keywordQuery+"))")
+		parts = append(parts, "(("+strings.Join(includeTerms, " OR ")+") OR ("+keywordQuery+"))")
 	} else if len(normalizedIncludeEmails) > 0 {
 		includeTerms := make([]string, 0, len(normalizedIncludeEmails))
 		for _, email := range normalizedIncludeEmails {
 			includeTerms = append(includeTerms, "from:"+email)
 		}
-		parts = append(parts, "{"+strings.Join(includeTerms, " ")+"}")
+		parts = append(parts, "("+strings.Join(includeTerms, " OR ")+")")
 	} else if keywordQuery != "" {
 		parts = append(parts, keywordQuery)
 	}
