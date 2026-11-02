@@ -11,11 +11,12 @@ import (
 func TestGetRoadmapUserID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	t.Run("Query uid exists", func(t *testing.T) {
+	t.Run("Authenticated uid exists", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		req, _ := http.NewRequest("GET", "/api/companies/1/roadmap?uid=42", nil)
+		req, _ := http.NewRequest("GET", "/api/companies/1/roadmap", nil)
 		c.Request = req
+		c.Set("userID", int64(42))
 
 		uid, err := getRoadmapUserID(c)
 		if err != nil {

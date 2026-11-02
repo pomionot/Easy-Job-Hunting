@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -254,28 +253,9 @@ func ExtractEventFromMailHandler(c *gin.Context) {
 // 2. 📅 イベント一覧を取得
 // ==========================================
 func GetEventsHandler(c *gin.Context) {
-	_, _, err := resolveUserAccessToken(c)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
-		// ユーザーID指定がない場合はダミーデータを返す（Dashboard用）
-		jsonEvents := `[
-			{"id": 1, "date": "2026-05-25", "company": "株式会社スタンバイ", "title": "一次選考（オンライン面接）", "time": "14:00 - 15:00"},
-			{"id": 2, "date": "2026-05-25", "company": "未来ソリューションズ", "title": "会社説明会", "time": "16:00 - 17:30"},
-			{"id": 3, "date": "2026-05-28", "company": "TechInnovation", "title": "最終面接（対面）", "time": "11:00 - 12:00"}
-		]`
-		c.Data(200, "application/json", []byte(jsonEvents))
-		return
-	}
-
-	// ユーザーIDを取得
-	var uid int64
-	if uidParam := c.Query("uid"); uidParam != "" {
-		uid, _ = strconv.ParseInt(uidParam, 10, 64)
-	} else if emailParam := c.Query("email"); emailParam != "" {
-		config.DB.QueryRow("SELECT id FROM users WHERE email = ?", emailParam).Scan(&uid)
-	}
-
-	if uid == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザーIDまたはメールアドレスが必要です"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
@@ -346,7 +326,7 @@ func CreateEventHandler(c *gin.Context) {
 		return
 	}
 
-	uid, err := eventUserID(c)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -405,7 +385,7 @@ func UpdateEventHandler(c *gin.Context) {
 		return
 	}
 
-	uid, err := eventUserID(c)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -441,7 +421,7 @@ func DeleteEventHandler(c *gin.Context) {
 		return
 	}
 
-	uid, err := eventUserID(c)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -461,22 +441,4 @@ func DeleteEventHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "イベントが削除されました"})
-}
-
-func eventUserID(c *gin.Context) (int64, error) {
-	if uidParam := c.Query("uid"); uidParam != "" {
-		uid, err := strconv.ParseInt(uidParam, 10, 64)
-		if err != nil || uid == 0 {
-			return 0, fmt.Errorf("ユーザーIDの形式が正しくありません")
-		}
-		return uid, nil
-	}
-	if emailParam := c.Query("email"); emailParam != "" {
-		var uid int64
-		if err := config.DB.QueryRow("SELECT id FROM users WHERE email = ?", emailParam).Scan(&uid); err != nil {
-			return 0, fmt.Errorf("ユーザーが見つかりません")
-		}
-		return uid, nil
-	}
-	return 0, fmt.Errorf("ユーザーIDまたはメールアドレスが必要です")
 }

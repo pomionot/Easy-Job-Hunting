@@ -61,19 +61,7 @@ type RoadmapSummaryItem struct {
 }
 
 func getRoadmapUserID(c *gin.Context) (int64, error) {
-	if uidParam := c.Query("uid"); uidParam != "" {
-		uid, err := strconv.ParseInt(uidParam, 10, 64)
-		if err == nil && uid > 0 {
-			return uid, nil
-		}
-	}
-	if emailParam := c.Query("email"); emailParam != "" {
-		var uid int64
-		if err := config.DB.QueryRow("SELECT id FROM users WHERE email = ?", emailParam).Scan(&uid); err == nil && uid > 0 {
-			return uid, nil
-		}
-	}
-	return 0, fmt.Errorf("ログイン情報（ユーザーIDまたはメールアドレス）が不足しています")
+	return authenticatedUserID(c)
 }
 
 // ==========================================

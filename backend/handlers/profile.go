@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
-	"strconv"
 
 	"Easy-Job-Hunting/config"
 
@@ -11,7 +10,6 @@ import (
 )
 
 type ProfileRequest struct {
-	UID            int64  `json:"uid"`
 	Name           string `json:"name"`
 	University     string `json:"university"`
 	Faculty        string `json:"faculty"`
@@ -36,8 +34,9 @@ func UpdateProfileHandler(c *gin.Context) {
 		return
 	}
 
-	if req.UID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "一意のUIDが必要です"})
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
@@ -51,7 +50,7 @@ func UpdateProfileHandler(c *gin.Context) {
 		target_industry = VALUES(target_industry),
 		self_pr = VALUES(self_pr);
 	`
-	if _, err := config.DB.Exec(query, req.UID, req.Name, req.University, req.Faculty, req.TargetIndustry, req.SelfPR); err != nil {
+	if _, err := config.DB.Exec(query, uid, req.Name, req.University, req.Faculty, req.TargetIndustry, req.SelfPR); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "プロフィールの保存に失敗しました: " + err.Error()})
 		return
 	}
@@ -60,15 +59,9 @@ func UpdateProfileHandler(c *gin.Context) {
 }
 
 func GetProfileHandler(c *gin.Context) {
-	uidParam := c.Query("uid")
-	if uidParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidパラメータが必要です"})
-		return
-	}
-
-	uid, err := strconv.ParseInt(uidParam, 10, 64)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidの形式が正しくありません"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 

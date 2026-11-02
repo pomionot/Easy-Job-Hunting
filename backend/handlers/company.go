@@ -3,42 +3,34 @@ package handlers
 import (
 	"Easy-Job-Hunting/config"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 // 既存の CompanyRequest 構造体に Status を追加
 type CompanyRequest struct {
-	UID         int    `json:"uid"`
-	CompanyName string `json:"company_name"`
-	Industry    string `json:"industry"`
+	CompanyName  string `json:"company_name"`
+	Industry     string `json:"industry"`
 	BusinessType string `json:"business_type"`
-	HomepageURL string `json:"homepage_url"`
-	Status      string `json:"status"` // 👈 これを追加
+	HomepageURL  string `json:"homepage_url"`
+	Status       string `json:"status"` // 👈 これを追加
 }
 
 // CompanyResponse フロントに返す企業情報の構造
 type CompanyResponse struct {
-	ID          int    `json:"id"`
-	CompanyName string `json:"company_name"`
-	Industry    string `json:"industry"`
+	ID           int    `json:"id"`
+	CompanyName  string `json:"company_name"`
+	Industry     string `json:"industry"`
 	BusinessType string `json:"business_type"`
-	HomepageURL string `json:"homepage_url"`
-	Status      string `json:"status"`
+	HomepageURL  string `json:"homepage_url"`
+	Status       string `json:"status"`
 }
 
 // GetCompaniesHandler 企業一覧取得API (GET)
 func GetCompaniesHandler(c *gin.Context) {
-	uidStr := c.Query("uid")
-	if uidStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "UIDが指定されていません"})
-		return
-	}
-
-	uid, err := strconv.Atoi(uidStr)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正なUIDです"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
@@ -82,8 +74,9 @@ func RegisterCompanyHandler(c *gin.Context) {
 		return
 	}
 
-	if req.UID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "UIDが不正です"})
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
@@ -96,7 +89,7 @@ func RegisterCompanyHandler(c *gin.Context) {
 		INSERT INTO companies (user_id, company_name, industry, business_type, homepage_url, status)
 		VALUES (?, ?, ?, ?, ?, ?);
 	`
-	_, err := config.DB.Exec(query, req.UID, req.CompanyName, req.Industry, req.BusinessType, req.HomepageURL, "検討中")
+	_, err = config.DB.Exec(query, uid, req.CompanyName, req.Industry, req.BusinessType, req.HomepageURL, "検討中")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "企業情報の保存に失敗しました: " + err.Error()})
 		return
@@ -116,10 +109,20 @@ func UpdateCompanyStatusHandler(c *gin.Context) {
 		return
 	}
 
-	query := "UPDATE companies SET status = ? WHERE id = ?;"
-	_, err := config.DB.Exec(query, req.Status, req.ID)
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+		return
+	}
+
+	query := "UPDATE companies SET status = ? WHERE id = ? AND user_id = ?;"
+	result, err := config.DB.Exec(query, req.Status, req.ID, uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ステータスの更新に失敗しました: " + err.Error()})
+		return
+	}
+	if count, _ := result.RowsAffected(); count == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "企業が見つかりません"})
 		return
 	}
 

@@ -8,12 +8,16 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"Easy-Job-Hunting/auth"
 	"Easy-Job-Hunting/config"
 	"Easy-Job-Hunting/handlers"
+	"Easy-Job-Hunting/middleware"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -41,6 +45,8 @@ func main() {
 	port := strings.TrimPrefix(envOrDefault("PORT", "8080"), ":")
 
 	r := gin.Default()
+	sessionSecret := envOrDefault("SESSION_SECRET", "change-this-session-secret-in-production")
+	r.Use(sessions.Sessions("session", cookie.NewStore([]byte(sessionSecret))))
 
 	distPath := envOrDefault("DIST_PATH", "../frontend/dist")
 	log.Printf("Using DIST_PATH: %s", distPath)
@@ -139,40 +145,48 @@ func main() {
 			return
 		}
 
+		session := sessions.Default(c)
+		session.Set(middleware.UserIDSessionKey, strconv.FormatInt(userID, 10))
+		if err := session.Save(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "セッションの保存に失敗しました: " + err.Error()})
+			return
+		}
+
 		redirectURL := fmt.Sprintf("%s/?login=success&uid=%d&email=%s", frontEndURL, userID, url.QueryEscape(loginEmail))
 		c.Redirect(303, redirectURL)
 	})
 
 	// 各種APIエンドポイントを外部ハンドラーにマッピング
-	r.GET("/api/events", handlers.GetEventsHandler)
-	r.POST("/api/events", handlers.CreateEventHandler)
-	r.PUT("/api/events/:id", handlers.UpdateEventHandler)
-	r.DELETE("/api/events/:id", handlers.DeleteEventHandler)
-	r.POST("/api/extract-event", handlers.ExtractEventFromMailHandler)
-	r.GET("/api/fetch-mails", handlers.HandleFetchMails)
-	r.GET("/api/mails/:id", handlers.GetMailDetailHandler)
-	r.GET("/api/mail-filters", handlers.GetMailFilterHandler)
-	r.POST("/api/mail-filters", handlers.UpdateMailFilterHandler)
-	r.PUT("/api/mail-filters", handlers.UpdateMailFilterHandler)
-	r.POST("/api/mail-filters/items", handlers.AddMailFilterEntryHandler)
-	r.PUT("/api/mail-filters/items/:id", handlers.UpdateMailFilterEntryHandler)
-	r.DELETE("/api/mail-filters/items/:id", handlers.DeleteMailFilterEntryHandler)
-	r.POST("/api/profile", handlers.UpdateProfileHandler)
-	r.GET("/api/profile", handlers.GetProfileHandler)
-	r.POST("/api/companies", handlers.RegisterCompanyHandler)
-	r.GET("/api/companies", handlers.GetCompaniesHandler)
-	r.PUT("/api/companies/status", handlers.UpdateCompanyStatusHandler)
-	r.POST("/api/ai/analyze", handlers.AnalyzeCompanyHandler)
+	api := r.Group("/api", middleware.AuthRequired)
+	api.GET("/events", handlers.GetEventsHandler)
+	api.POST("/events", handlers.CreateEventHandler)
+	api.PUT("/events/:id", handlers.UpdateEventHandler)
+	api.DELETE("/events/:id", handlers.DeleteEventHandler)
+	api.POST("/extract-event", handlers.ExtractEventFromMailHandler)
+	api.GET("/fetch-mails", handlers.HandleFetchMails)
+	api.GET("/mails/:id", handlers.GetMailDetailHandler)
+	api.GET("/mail-filters", handlers.GetMailFilterHandler)
+	api.POST("/mail-filters", handlers.UpdateMailFilterHandler)
+	api.PUT("/mail-filters", handlers.UpdateMailFilterHandler)
+	api.POST("/mail-filters/items", handlers.AddMailFilterEntryHandler)
+	api.PUT("/mail-filters/items/:id", handlers.UpdateMailFilterEntryHandler)
+	api.DELETE("/mail-filters/items/:id", handlers.DeleteMailFilterEntryHandler)
+	api.POST("/profile", handlers.UpdateProfileHandler)
+	api.GET("/profile", handlers.GetProfileHandler)
+	api.POST("/companies", handlers.RegisterCompanyHandler)
+	api.GET("/companies", handlers.GetCompaniesHandler)
+	api.PUT("/companies/status", handlers.UpdateCompanyStatusHandler)
+	api.POST("/ai/analyze", handlers.AnalyzeCompanyHandler)
 
 	// 企業ロードマップ関連API
-	r.GET("/api/companies/:id/roadmap", handlers.GetCompanyRoadmapHandler)
-	r.POST("/api/companies/:id/roadmap/init", handlers.InitCompanyRoadmapHandler)
-	r.POST("/api/companies/:id/roadmap/steps", handlers.AddRoadmapStepHandler)
-	r.PUT("/api/companies/:id/roadmap/steps/:step_id", handlers.UpdateRoadmapStepHandler)
-	r.DELETE("/api/companies/:id/roadmap/steps/:step_id", handlers.DeleteRoadmapStepHandler)
-	r.PUT("/api/companies/:id/roadmap/current", handlers.SetCurrentRoadmapStepHandler)
-	r.GET("/api/roadmaps/summary", handlers.GetRoadmapSummaryHandler)
-	r.POST("/api/companies/:id/roadmap/advice", handlers.GetRoadmapAdviceHandler)
+	api.GET("/companies/:id/roadmap", handlers.GetCompanyRoadmapHandler)
+	api.POST("/companies/:id/roadmap/init", handlers.InitCompanyRoadmapHandler)
+	api.POST("/companies/:id/roadmap/steps", handlers.AddRoadmapStepHandler)
+	api.PUT("/companies/:id/roadmap/steps/:step_id", handlers.UpdateRoadmapStepHandler)
+	api.DELETE("/companies/:id/roadmap/steps/:step_id", handlers.DeleteRoadmapStepHandler)
+	api.PUT("/companies/:id/roadmap/current", handlers.SetCurrentRoadmapStepHandler)
+	api.GET("/roadmaps/summary", handlers.GetRoadmapSummaryHandler)
+	api.POST("/companies/:id/roadmap/advice", handlers.GetRoadmapAdviceHandler)
 
 	fmt.Printf("サーバーがポート %s で起動しました。 http://localhost:%s/login\n", port, port)
 	log.Fatal(r.Run(":" + port))

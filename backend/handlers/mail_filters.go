@@ -11,22 +11,21 @@ import (
 )
 
 type MailFilterEntry struct {
-	ID       int64  `json:"id"`
-	Type     string `json:"type"`
-	Email    string `json:"email"`
-	UserID   int64  `json:"user_id"`
+	ID     int64  `json:"id"`
+	Type   string `json:"type"`
+	Email  string `json:"email"`
+	UserID int64  `json:"user_id"`
 }
 
 type MailFilterRequest struct {
-	UID           int64  `json:"uid"`
 	IncludeEmails string `json:"include_emails"`
 	ExcludeEmails string `json:"exclude_emails"`
 }
 
 type MailFilterResponse struct {
-	UID            int64           `json:"uid"`
-	IncludeEmails  []MailFilterEntry `json:"include_emails"`
-	ExcludeEmails  []MailFilterEntry `json:"exclude_emails"`
+	UID           int64             `json:"uid"`
+	IncludeEmails []MailFilterEntry `json:"include_emails"`
+	ExcludeEmails []MailFilterEntry `json:"exclude_emails"`
 }
 
 func normalizeEmail(value string) string {
@@ -67,15 +66,9 @@ func loadMailFilterSettings(uid int64) ([]string, []string, error) {
 }
 
 func GetMailFilterHandler(c *gin.Context) {
-	uidParam := c.Query("uid")
-	if uidParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidパラメータが必要です"})
-		return
-	}
-
-	uid, err := strconv.ParseInt(uidParam, 10, 64)
+	uid, err := authenticatedUserID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidの形式が正しくありません"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
@@ -111,13 +104,14 @@ func UpdateMailFilterHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
 		return
 	}
-	if req.UID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidが不正です"})
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
 	// 既存のレコードを削除してから保存し直す（単純な構成）
-	if _, err := config.DB.Exec("DELETE FROM mail_filter_entries WHERE user_id = ?", req.UID); err != nil {
+	if _, err := config.DB.Exec("DELETE FROM mail_filter_entries WHERE user_id = ?", uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "既存フィルターのクリアに失敗しました: " + err.Error()})
 		return
 	}
@@ -127,7 +121,7 @@ func UpdateMailFilterHandler(c *gin.Context) {
 		if email == "" {
 			continue
 		}
-		if _, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, 'include', ?)", req.UID, email); err != nil {
+		if _, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, 'include', ?)", uid, email); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "含めるメールアドレスの保存に失敗しました: " + err.Error()})
 			return
 		}
@@ -137,7 +131,7 @@ func UpdateMailFilterHandler(c *gin.Context) {
 		if email == "" {
 			continue
 		}
-		if _, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, 'exclude', ?)", req.UID, email); err != nil {
+		if _, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, 'exclude', ?)", uid, email); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "除外メールアドレスの保存に失敗しました: " + err.Error()})
 			return
 		}
@@ -148,7 +142,6 @@ func UpdateMailFilterHandler(c *gin.Context) {
 
 func AddMailFilterEntryHandler(c *gin.Context) {
 	var req struct {
-		UID   int64  `json:"uid"`
 		Type  string `json:"type"`
 		Email string `json:"email"`
 	}
@@ -156,8 +149,13 @@ func AddMailFilterEntryHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
 		return
 	}
-	if req.UID <= 0 || req.Type == "" || req.Type != "include" && req.Type != "exclude" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidとtypeが正しくありません"})
+	if req.Type == "" || req.Type != "include" && req.Type != "exclude" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "typeが正しくありません"})
+		return
+	}
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 	req.Email = normalizeEmail(req.Email)
@@ -166,7 +164,7 @@ func AddMailFilterEntryHandler(c *gin.Context) {
 		return
 	}
 
-	res, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, ?, ?)", req.UID, req.Type, req.Email)
+	res, err := config.DB.Exec("INSERT INTO mail_filter_entries (user_id, entry_type, email) VALUES (?, ?, ?)", uid, req.Type, req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールアドレスの追加に失敗しました: " + err.Error()})
 		return
@@ -184,7 +182,6 @@ func UpdateMailFilterEntryHandler(c *gin.Context) {
 	}
 
 	var req struct {
-		UID   int64  `json:"uid"`
 		Type  string `json:"type"`
 		Email string `json:"email"`
 	}
@@ -192,8 +189,9 @@ func UpdateMailFilterEntryHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
 		return
 	}
-	if req.UID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidが不正です"})
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 	req.Email = normalizeEmail(req.Email)
@@ -206,7 +204,7 @@ func UpdateMailFilterEntryHandler(c *gin.Context) {
 		return
 	}
 
-	if _, err := config.DB.Exec("UPDATE mail_filter_entries SET entry_type = ?, email = ? WHERE id = ? AND user_id = ?", req.Type, req.Email, id, req.UID); err != nil {
+	if _, err := config.DB.Exec("UPDATE mail_filter_entries SET entry_type = ?, email = ? WHERE id = ? AND user_id = ?", req.Type, req.Email, id, uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "メールアドレスの更新に失敗しました: " + err.Error()})
 		return
 	}
@@ -221,17 +219,13 @@ func DeleteMailFilterEntryHandler(c *gin.Context) {
 		return
 	}
 
-	var req struct { UID int64 `json:"uid"` }
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストデータの解析に失敗しました"})
-		return
-	}
-	if req.UID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "uidが不正です"})
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
 		return
 	}
 
-	if _, err := config.DB.Exec("DELETE FROM mail_filter_entries WHERE id = ? AND user_id = ?", id, req.UID); err != nil {
+	if _, err := config.DB.Exec("DELETE FROM mail_filter_entries WHERE id = ? AND user_id = ?", id, uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "削除に失敗しました: " + err.Error()})
 		return
 	}

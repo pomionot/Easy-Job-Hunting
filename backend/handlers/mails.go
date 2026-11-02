@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"Easy-Job-Hunting/config"
@@ -17,33 +16,16 @@ import (
 )
 
 func resolveUserAccessToken(c *gin.Context) (string, string, error) {
-	uidParam := c.Query("uid")
-	if uidParam != "" {
-		uid, err := strconv.ParseInt(uidParam, 10, 64)
-		if err != nil {
-			return "", "", fmt.Errorf("uidの形式が正しくありません")
-		}
-
-		var accessToken string
-		var email string
-		if err := config.DB.QueryRow("SELECT access_token, email FROM users WHERE id = ?", uid).Scan(&accessToken, &email); err != nil {
-			return "", "", err
-		}
-
-		return accessToken, email, nil
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		return "", "", err
 	}
 
-	emailParam := c.Query("email")
-	if emailParam != "" {
-		var accessToken string
-		if err := config.DB.QueryRow("SELECT access_token FROM users WHERE email = ?", emailParam).Scan(&accessToken); err != nil {
-			return "", "", err
-		}
-
-		return accessToken, emailParam, nil
+	var accessToken, email string
+	if err := config.DB.QueryRow("SELECT access_token, email FROM users WHERE id = ?", uid).Scan(&accessToken, &email); err != nil {
+		return "", "", err
 	}
-
-	return "", "", fmt.Errorf("uidまたはemailが必要です")
+	return accessToken, email, nil
 }
 
 // MailSummary は一覧用の軽いデータ構造
@@ -76,21 +58,10 @@ func GetMailsHandler(c *gin.Context) {
 		return
 	}
 
-	var uid int64
-	if c.Query("uid") != "" {
-		uid, err = strconv.ParseInt(c.Query("uid"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "uidの形式が正しくありません"})
-			return
-		}
-	} else if c.Query("email") != "" {
-		var email string
-		if err := config.DB.QueryRow("SELECT id FROM users WHERE email = ?", c.Query("email")).Scan(&uid); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザーIDの取得に失敗しました: " + err.Error()})
-			return
-		}
-		email = c.Query("email")
-		_ = email
+	uid, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+		return
 	}
 
 	includeEmails, excludeEmails, err := loadMailFilterSettings(uid)

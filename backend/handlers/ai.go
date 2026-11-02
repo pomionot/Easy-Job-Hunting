@@ -15,7 +15,6 @@ import (
 
 // AIRequest フロントから届くリクエスト
 type AIRequest struct {
-	UserID     int    `json:"user_id"` // 👤 ユーザー情報を参照するために追加
 	CompanyID  int    `json:"company_id"`
 	PromptType string `json:"prompt_type"` // "research" または "motive"
 }
@@ -48,11 +47,16 @@ func AnalyzeCompanyHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストの解析に失敗しました"})
 		return
 	}
+	userID, err := authenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+		return
+	}
 
 	// 1. データベースから企業の詳細情報を取得する
 	var companyName, industry, businessType string
-	companyQuery := "SELECT company_name, industry, business_type FROM companies WHERE id = ?;"
-	err := config.DB.QueryRow(companyQuery, req.CompanyID).Scan(&companyName, &industry, &businessType)
+	companyQuery := "SELECT company_name, industry, business_type FROM companies WHERE id = ? AND user_id = ?;"
+	err = config.DB.QueryRow(companyQuery, req.CompanyID, userID).Scan(&companyName, &industry, &businessType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "企業情報の取得に失敗しました"})
 		return
@@ -62,7 +66,7 @@ func AnalyzeCompanyHandler(c *gin.Context) {
 	// 💡 実際のテーブル名やカラム名（skills, pr, bio など）に合わせて変更してください
 	var userSkills, userPR string
 	userQuery := "SELECT skills, self_pr FROM users WHERE id = ?;"
-	err = config.DB.QueryRow(userQuery, req.UserID).Scan(&userSkills, &userPR)
+	err = config.DB.QueryRow(userQuery, userID).Scan(&userSkills, &userPR)
 	if err != nil {
 		// プロフィールが空、または未登録の場合のフォールバック
 		userSkills = "Webアプリケーション開発への興味"
