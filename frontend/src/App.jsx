@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Dashboard from "./Dashboard"; // さっき作った画面をインポート
 import MailList from "./pages/MailList";
 import MailFilterSettings from "./pages/MailFilterSettings";
@@ -8,26 +8,28 @@ import CompanyList from "./pages/CompanyList";
 import CompanyRoadmap from "./pages/CompanyRoadmap";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+function initializeAuth() {
+  const params = new URLSearchParams(window.location.search);
+  const uid = params.get("uid");
+  const email = params.get("email");
+
+  if (uid) {
+    localStorage.setItem("login_user_uid", uid);
+  }
+  if (email) {
+    localStorage.setItem("login_user_email", email);
+  }
+
+  return {
+    isLoggedIn: params.get("login") === "success" ||
+      Boolean(localStorage.getItem("login_user_uid")),
+  };
+}
+
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // ログイン状態を管理
+  const [isLoggedIn] = useState(() => initializeAuth().isLoggedIn); // ログイン状態を管理
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // 💡 テスト用：URLに「login=success」が入っていたらログイン状態にする簡易判定
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("login") === "success") {
-      setIsLoggedIn(true);
-    }
-    const uid = params.get("uid");
-    if (uid) {
-      localStorage.setItem("login_user_uid", uid);
-    }
-    const email = params.get("email");
-    if (email) {
-      localStorage.setItem("login_user_email", email);
-    }
-  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
