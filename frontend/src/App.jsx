@@ -15,18 +15,20 @@ function initializeAuth() {
 
   if (uid) {
     localStorage.setItem("login_user_uid", uid);
+    console.log("[Auth] 新しいUIDを保存しました:", uid);
   }
   if (email) {
     localStorage.setItem("login_user_email", email);
   }
+
+  const hasValidSession = Boolean(localStorage.getItem("login_user_uid"));
 
   if (uid || email || params.get("login") === "success") {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
   return {
-    isLoggedIn: params.get("login") === "success" ||
-      Boolean(localStorage.getItem("login_user_uid")),
+    isLoggedIn: params.get("login") === "success" || hasValidSession,
   };
 }
 
