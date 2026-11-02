@@ -56,35 +56,46 @@ func normalizeEmailList(values []string) []string {
 }
 
 func BuildGmailQuery(includeEmails, excludeEmails []string) string {
-	var parts []string
-
-	// Gmail treats terms inside braces as OR. Put keywords and include
-	// senders in the same group so either condition can match independently.
-	var matchTerms []string
+	var keywordTerms []string
 	for _, keyword := range IncludeKeywords {
 		if keyword = strings.TrimSpace(keyword); keyword != "" {
-			matchTerms = append(matchTerms, keyword)
+			keywordTerms = append(keywordTerms, keyword)
 		}
-	}
-	for _, email := range normalizeEmailList(includeEmails) {
-		matchTerms = append(matchTerms, "from:"+email)
-	}
-	if len(matchTerms) > 0 {
-		parts = append(parts, "{"+strings.Join(matchTerms, " ")+"}")
 	}
 
-	for _, ex := range ExcludeKeywords {
-		ex = strings.TrimSpace(ex)
-		if ex == "" {
-			continue
+	var keywordQuery string
+	if len(keywordTerms) > 0 {
+		keywordQuery = "{" + strings.Join(keywordTerms, " ") + "}"
+		for _, keyword := range ExcludeKeywords {
+			keyword = strings.TrimSpace(keyword)
+			if keyword != "" {
+				keywordQuery += " -" + keyword
+			}
 		}
-		parts = append(parts, "-"+ex)
+	}
+
+	var parts []string
+	normalizedIncludeEmails := normalizeEmailList(includeEmails)
+	if len(normalizedIncludeEmails) > 0 && keywordQuery != "" {
+		includeTerms := make([]string, 0, len(normalizedIncludeEmails))
+		for _, email := range normalizedIncludeEmails {
+			includeTerms = append(includeTerms, "from:"+email)
+		}
+		// Included senders bypass keyword exclusions. Excluded senders are
+		// appended below so they remain excluded from every branch.
+		parts = append(parts, "({"+strings.Join(includeTerms, " ")+"} OR ("+keywordQuery+"))")
+	} else if len(normalizedIncludeEmails) > 0 {
+		includeTerms := make([]string, 0, len(normalizedIncludeEmails))
+		for _, email := range normalizedIncludeEmails {
+			includeTerms = append(includeTerms, "from:"+email)
+		}
+		parts = append(parts, "{"+strings.Join(includeTerms, " ")+"}")
+	} else if keywordQuery != "" {
+		parts = append(parts, keywordQuery)
 	}
 
 	for _, email := range normalizeEmailList(excludeEmails) {
-		if email != "" {
-			parts = append(parts, "-from:"+email)
-		}
+		parts = append(parts, "-from:"+email)
 	}
 
 	return strings.Join(parts, " ")

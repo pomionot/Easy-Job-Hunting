@@ -12,7 +12,7 @@ func TestBuildGmailQueryIncludesAndExcludesSenders(t *testing.T) {
 	)
 
 	for _, expected := range []string{
-		"{面接 選考 インターン 説明会 書類選考 from:hr@example.com}",
+		"({from:hr@example.com} OR ({面接 選考 インターン 説明会 書類選考} -メルマガ -おすすめ情報 -お知らせ -配信停止))",
 		"from:hr@example.com",
 		"-from:newsletter@example.com",
 		"-メルマガ",
@@ -30,17 +30,17 @@ func TestBuildGmailQueryIncludesAndExcludesSenders(t *testing.T) {
 func TestBuildGmailQueryIncludeSenderBypassesKeywords(t *testing.T) {
 	query := BuildGmailQuery([]string{"recruit@example.com", "hr@example.com"}, nil)
 
-	expected := "{面接 選考 インターン 説明会 書類選考 from:recruit@example.com from:hr@example.com}"
+	expected := "({from:recruit@example.com from:hr@example.com} OR ({面接 選考 インターン 説明会 書類選考} -メルマガ -おすすめ情報 -お知らせ -配信停止))"
 	if !strings.Contains(query, expected) {
-		t.Fatalf("キーワード条件と必ず含める送信者条件が同じORグループにありません: %s", query)
+		t.Fatalf("必ず含める送信者が除外ワードを迂回するOR条件になっていません: %s", query)
 	}
 }
 
 func TestBuildGmailQueryExcludesSenderRegardlessOfKeywords(t *testing.T) {
 	query := BuildGmailQuery([]string{"recruit@example.com"}, []string{"newsletter@example.com"})
 
-	if !strings.Contains(query, "{面接 選考 インターン 説明会 書類選考 from:recruit@example.com}") {
-		t.Fatalf("キーワードまたは必ず含める送信者の条件がありません: %s", query)
+	if !strings.Contains(query, "({from:recruit@example.com} OR ({面接 選考 インターン 説明会 書類選考} -メルマガ -おすすめ情報 -お知らせ -配信停止))") {
+		t.Fatalf("必ず含める送信者が除外ワードを迂回する条件になっていません: %s", query)
 	}
 	if !strings.Contains(query, "-from:newsletter@example.com") {
 		t.Fatalf("除外送信者の条件がありません: %s", query)
