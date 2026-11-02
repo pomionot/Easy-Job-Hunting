@@ -29,7 +29,14 @@ export default function MailList() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   // 1. フィルターされたメール一覧をバックエンドから取得
   const loadMails = (showLoading = false, pageToken = "") => {
+    console.log(
+      "[DEBUG loadMails called] auth:",
+      auth,
+      "localStorage uid:",
+      localStorage.getItem("login_user_uid"),
+    );
     if (!auth.uid && !auth.email) {
+      console.warn("[DEBUG loadMails] auth.uid または auth.email が空のためリターンします");
       return;
     }
 
