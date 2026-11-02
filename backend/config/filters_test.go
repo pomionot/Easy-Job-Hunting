@@ -12,7 +12,7 @@ func TestBuildGmailQueryIncludesAndExcludesSenders(t *testing.T) {
 	)
 
 	for _, expected := range []string{
-		"面接 OR 選考 OR インターン OR 説明会 OR 書類選考",
+		"({面接 選考 インターン 説明会 書類選考} OR {from:hr@example.com})",
 		"from:hr@example.com",
 		"-from:newsletter@example.com",
 		"-メルマガ",
@@ -21,8 +21,17 @@ func TestBuildGmailQueryIncludesAndExcludesSenders(t *testing.T) {
 			t.Fatalf("queryに %q がありません: %s", expected, query)
 		}
 	}
+
 	if strings.Count(query, "from:hr@example.com") != 1 {
 		t.Fatalf("重複した送信元が含まれています: %s", query)
+	}
+}
+
+func TestBuildGmailQueryIncludeSenderBypassesKeywords(t *testing.T) {
+	query := BuildGmailQuery([]string{"recruit@example.com"}, nil)
+
+	if !strings.Contains(query, "({面接 選考 インターン 説明会 書類選考} OR {from:recruit@example.com})") {
+		t.Fatalf("必ず含める送信者がキーワード条件とORになっていません: %s", query)
 	}
 }
 
