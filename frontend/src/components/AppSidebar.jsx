@@ -25,35 +25,46 @@ export default function AppSidebar({ activePath }) {
   };
 
   return (
-    <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
-      <div className="h-16 flex items-center px-6 border-b border-gray-100">
-        <Link to="/dashboard" className="text-xl font-bold text-orange-600 flex items-center gap-2">
-          <i className="fa-solid fa-seedling" aria-hidden="true" />
-          Easy Job Hunting
-        </Link>
-      </div>
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        {navItems.map(([to, icon, label]) => (
-          <Link
-            key={to}
-            to={to}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${to === activePath ? "bg-orange-50 text-orange-600" : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"}`}
-          >
-            <i className={`${icon} w-5`} aria-hidden="true" />
-            {label}
+    <>
+      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <Link to="/dashboard" className="text-xl font-bold text-orange-600 flex items-center gap-2">
+            <i className="fa-solid fa-seedling" aria-hidden="true" />
+            Easy Job Hunting
           </Link>
-        ))}
-      </nav>
-      <div className="border-t border-gray-100 p-4">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
-        >
-          <i className="fa-solid fa-right-from-bracket w-5" aria-hidden="true" />
-          ログアウト
-        </button>
-      </div>
-    </aside>
+        </div>
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {navItems.map(([to, icon, label]) => (
+            <Link
+              key={to}
+              to={to}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${to === activePath ? "bg-orange-50 text-orange-600" : "text-gray-600 hover:bg-gray-50 hover:text-orange-500"}`}
+            >
+              <i className={`${icon} w-5`} aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <div className="border-t border-gray-100 p-4">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            <i className="fa-solid fa-right-from-bracket w-5" aria-hidden="true" />
+            ログアウト
+          </button>
+        </div>
+      </aside>
+      <button
+        type="button"
+        onClick={handleLogout}
+        aria-label="ログアウト"
+        className="fixed right-4 top-4 z-40 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-red-50 hover:text-red-600 md:hidden"
+      >
+        <i className="fa-solid fa-right-from-bracket mr-2" aria-hidden="true" />
+        ログアウト
+      </button>
+    </>
   );
 }
