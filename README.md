@@ -163,6 +163,55 @@ npm run lint
 
 現在のLintには、既存画面のReact Hooks規則に関する課題が残っています。画面テストと本番ビルドは独立して実行できます。
 
+### 本番配信時のキャッシュ設定
+
+Viteの本番ビルドでは、JavaScriptとCSSが`assets/<name>-<hash>.<ext>`というハッシュ付きファイル名で生成されます。これらのファイルは内容が変わるとファイル名も変わるため、Nginxでは長期キャッシュを設定できます。
+
+一方、`index.html`は新しいハッシュ付きアセットへの参照を持つため、長期間キャッシュさせず、毎回サーバーへ再検証させてください。このアプリは`https://server5.tntetsu-lab.org/`からアクセスし、NginxがGoアプリ（`localhost:3005`）へ転送する構成を想定しています。Nginxのサイト設定（このリポジトリには含まれていません）には、次のようにHTML、アセット、APIを別々の`location`で設定します。
+
+```nginx
+# ルートのSPA HTML
+location = / {
+    proxy_pass http://localhost:3005;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-cache, must-revalidate" always;
+}
+
+# index.htmlへの直接アクセス
+location = /index.html {
+    proxy_pass http://localhost:3005;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-cache, must-revalidate" always;
+}
+
+# Viteのハッシュ付きJavaScript/CSS
+location ^~ /assets/ {
+    proxy_pass http://localhost:3005;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+}
+
+# APIにはHTML用のCache-Controlを付けない
+location ^~ /api/ {
+    proxy_pass http://localhost:3005;
+}
+
+# React Routerの各画面もHTMLを再検証する
+location / {
+    proxy_pass http://localhost:3005;
+    proxy_hide_header Cache-Control;
+    add_header Cache-Control "no-cache, must-revalidate" always;
+}
+```
+
+`location`はより具体的なものが優先されるため、`/api/`にはHTML用の`Cache-Control`が適用されません。`proxy_hide_header Cache-Control`はGoアプリ側の同名ヘッダーとの重複を避けるためのものです。`assets`配下にハッシュなしで更新されるファイルを配置する場合は、長期キャッシュの対象に含めないでください。`index.html`や新しいアセットを公開する際は、次の順序でデプロイします。
+
+1. 新しいビルドの`assets`ディレクトリを先に配置する。
+2. `index.html`を配置または切り替える。
+3. 旧ハッシュ付きアセットは、更新中の利用者が参照する可能性があるため、一定期間保持してから削除する。
+
+このリポジトリにはNginx設定や本番デプロイスクリプトがないため、上記設定の反映、配信ヘッダーの確認、Nginx設定の再読み込みは本番サーバー側で実施してください。
+
 ## 主な画面
 
 | 画面 | ルート | 主な機能 |
